@@ -1,142 +1,187 @@
-# AI Toolkit Web界面 - 技术方案
+# AI Toolkit Web Interface
 
-## 🎯 项目目标
+**Web界面让非技术用户也能轻松使用AI Toolkit的2052+命令！** 🚀
 
-为AI Toolkit创建友好的Web界面，让非技术用户也能轻松使用2052+个命令。
+## 🎯 项目简介
 
-## 📐 技术栈
+AI Toolkit Web是一个现代化的Web界面，为AI Toolkit命令行工具提供图形化操作界面。让非技术用户（商务人士、研究人员、内容创作者等）也能轻松使用强大的AI工具。
+
+## ✨ 核心特性
+
+- 🎨 **现代化UI**: React 18 + Ant Design 5.x
+- 🚀 **高性能**: Vite构建，秒级启动
+- 📱 **响应式**: 完美支持桌面和移动端
+- 🔍 **智能搜索**: 快速找到需要的命令
+- 📊 **表单化操作**: 无需记忆命令语法
+- 🌐 **多语言**: 支持中文界面
+
+## 🏗️ 技术栈
 
 ### 前端
 - **框架**: React 18 + TypeScript
-- **UI库**: Ant Design 5.x (企业级UI)
-- **状态管理**: Zustand (轻量级)
+- **UI库**: Ant Design 5.x
+- **构建**: Vite 5.x
 - **路由**: React Router 6
-- **构建工具**: Vite
-- **样式**: TailwindCSS
+- **状态**: Zustand
 
 ### 后端
-- **框架**: FastAPI (Python)
-- **API**: RESTful + WebSocket
-- **认证**: JWT
-- **文档**: OpenAPI/Swagger
-
-## 🏗️ 项目结构
-
-```
-ai-toolkit-web/
-├── frontend/                 # 前端
-│   ├── src/
-│   │   ├── components/      # 组件
-│   │   │   ├── common/      # 通用组件
-│   │   │   ├── modules/     # 模块组件
-│   │   │   └── layout/      # 布局组件
-│   │   ├── pages/           # 页面
-│   │   │   ├── home/        # 首页
-│   │   │   ├── modules/     # 模块页
-│   │   │   └── tools/       # 工具页
-│   │   ├── services/        # API服务
-│   │   ├── store/           # 状态管理
-│   │   └── utils/           # 工具函数
-│   └── package.json
-│
-├── backend/                  # 后端
-│   ├── app/
-│   │   ├── api/             # API路由
-│   │   ├── models/          # 数据模型
-│   │   ├── services/        # 业务逻辑
-│   │   └── main.py          # FastAPI应用
-│   └── requirements.txt
-│
-└── README.md
-```
-
-## 🎨 核心功能
-
-### 1. 首页
-- 模块分类导航
-- 搜索功能
-- 热门工具推荐
-- 快速入口
-
-### 2. 模块页面
-- 模块列表（按分类）
-- 模块详情
-- 命令配置表单
-- 执行结果展示
-
-### 3. 工具执行
-- 表单化参数输入
-- 实时执行状态
-- 结果可视化
-- 日志输出
-
-### 4. 用户系统
-- 用户注册/登录
-- 个人配置
-- 使用历史
-- 收藏功能
-
-## 🎯 MVP功能（第一阶段）
-
-### 核心功能
-1. ✅ 模块浏览和搜索
-2. ✅ 命令执行（表单化）
-3. ✅ 结果展示
-4. ✅ 日志查看
-
-### 支持模块（第一批）
-1. 🤖 AI核心：api.py, simple_core.py
-2. 📊 数据分析：analytics.py
-3. 💾 备份工具：backup.py
-4. 🔄 批处理：batch.py
-5. 🧬 生物信息学：bio.py
-
-## 📝 开发计划
-
-### 阶段1: 基础框架（当前）
-- [ ] 创建前后端项目结构
-- [ ] 搭建基础UI框架
-- [ ] 实现后端API
-
-### 阶段2: 核心功能
-- [ ] 模块列表展示
-- [ ] 命令表单生成
-- [ ] 执行逻辑
-- [ ] 结果展示
-
-### 阶段3: 优化体验
-- [ ] 搜索功能
-- [ ] 收藏功能
-- [ ] 历史记录
-- [ ] 响应式设计
-
-### 阶段4: 高级功能
-- [ ] 用户系统
-- [ ] 多语言
-- [ ] 主题切换
-- [ ] 移动端优化
+- **框架**: FastAPI 0.109.0
+- **ASGI服务器**: Uvicorn
+- **验证**: Pydantic 2.x
+- **文档**: Swagger/OpenAPI
 
 ## 🚀 快速开始
 
-```bash
-# 前端
-cd frontend
-npm install
-npm run dev
+### 一键启动（推荐）
 
-# 后端
+```bash
+# 克隆仓库
+git clone https://github.com/flowerjunjie/ai-toolkit-web.git
+cd ai-toolkit-web
+
+# 启动服务
+./start.sh
+```
+
+### 手动启动
+
+#### 1. 后端
+
+```bash
 cd backend
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-## 📊 项目里程碑
+#### 2. 前端
 
-- **v0.1.0**: MVP上线（5个核心模块）
-- **v0.2.0**: 支持20个模块
-- **v0.3.0**: 完整105个模块
-- **v1.0.0**: 生产环境部署
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 访问
+
+- **前端**: http://localhost:3000
+- **后端**: http://localhost:8000
+- **API文档**: http://localhost:8000/docs
+
+## 📖 使用指南
+
+### 1. 浏览模块
+
+访问首页，查看所有功能模块：
+
+- 🤖 **AI核心**: LLM、RAG、ML、NLP
+- 📊 **数据分析**: 统计、可视化、挖掘
+- 🔧 **开发工具**: 编码、CI/CD、DevOps
+- ☁️ **云服务**: 部署、监控、容器
+- 💼 **商业应用**: 电商、营销、金融
+- 🔬 **科学研究**: 生物、医疗、物理
+
+### 2. 选择命令
+
+点击模块卡片，查看可用命令列表。
+
+### 3. 配置参数
+
+选择命令后，填写表单参数：
+
+- 文本输入
+- 数字输入
+- 下拉选择
+- 文件上传
+- 多行文本
+
+### 4. 执行查看结果
+
+点击"执行命令"，实时查看执行状态和结果。
+
+## 🎯 核心功能
+
+### ✅ 已实现
+
+- [x] 模块浏览和搜索
+- [x] 命令表单生成
+- [x] 参数验证
+- [x] 文件上传
+- [x] 命令执行
+- [x] 结果展示
+- [x] RESTful API
+- [x] Swagger文档
+
+### 🚧 开发中
+
+- [ ] 用户系统
+- [ ] 历史记录
+- [ ] 收藏功能
+- [ ] 多语言支持
+- [ ] 主题切换
+
+## 📁 项目结构
+
+```
+ai-toolkit-web/
+├── frontend/              # 前端
+│   ├── src/
+│   │   ├── components/   # 组件
+│   │   ├── pages/        # 页面
+│   │   ├── data/         # 数据
+│   │   └── App.tsx
+│   └── package.json
+├── backend/              # 后端
+│   ├── app/
+│   │   ├── api/         # API路由
+│   │   ├── models/      # 数据模型
+│   │   └── main.py
+│   └── requirements.txt
+├── start.sh              # 启动脚本
+├── DEPLOYMENT.md         # 部署指南
+└── README.md
+```
+
+## 🎨 界面预览
+
+### 首页
+- 项目统计
+- 功能分类
+- 快速入口
+
+### 模块页
+- 模块卡片
+- 命令列表
+- 分类导航
+
+### 工具页
+- 表单配置
+- 参数输入
+- 结果展示
+
+## 🔗 相关链接
+
+- **主项目**: [AI Toolkit](https://github.com/flowerjunjie/ai-toolkit)
+- **在线演示**: 即将上线
+- **问题反馈**: [GitHub Issues](https://github.com/flowerjunjie/ai-toolkit-web/issues)
+
+## 🤝 贡献
+
+欢迎贡献代码、提供建议、反馈问题！
+
+## 📄 许可证
+
+MIT License
+
+## 🎉 致谢
+
+- [FastAPI](https://fastapi.tiangolo.com/) - 现代化Python Web框架
+- [React](https://react.dev/) - 用户界面JavaScript库
+- [Ant Design](https://ant.design/) - 企业级UI设计语言
 
 ---
 
 **💰 产品为王 - 用户友好 - 永远beta！** 🚀
+
+Made with ❤️ by AI Toolkit Team
