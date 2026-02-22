@@ -1,6 +1,7 @@
 import React from 'react'
 import { Layout, Typography, Button, Space } from 'antd'
 import { GithubOutlined, ApiOutlined } from '@ant-design/icons'
+import SearchBar from '../common/SearchBar'
 
 const { Header } = Layout
 const { Title } = Typography
@@ -14,7 +15,7 @@ const AppHeader: React.FC = () => {
       background: '#001529',
       padding: '0 24px'
     }}>
-      <Space align="center">
+      <Space align="center" style={{ flex: 1 }}>
         <ApiOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
         <Title level={3} style={{ margin: 0, color: 'white' }}>
           AI Toolkit
@@ -24,7 +25,11 @@ const AppHeader: React.FC = () => {
         </Typography.Text>
       </Space>
       
-      <Space>
+      <Space style={{ flex: 1, justifyContent: 'center' }}>
+        <SearchBar />
+      </Space>
+      
+      <Space style={{ flex: 0, justifyContent: 'flex-end' }}>
         <Button 
           type="link" 
           icon={<GithubOutlined />}
