@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from typing import List
 
 
 class Settings(BaseSettings):
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
 
     # CORS配置
-    CORS_ORIGINS: list[str] = [
+    CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
     ]

@@ -36,7 +36,7 @@ export const categories = [
   { key: 'medical', name: '医疗健康', icon: '🏥', description: '诊断、治疗、健康' },
 ]
 
-// 模块数据（示例 - 第一批5个核心模块）
+// 模块数据（示例 - 第一批5个核心模块 + 商业应用）
 export const modules: Module[] = [
   {
     id: 'api',
@@ -288,6 +288,137 @@ export const modules: Module[] = [
             required: false,
             default: 'blast',
             options: ['blast', 'bowtie', 'bwa'],
+          },
+        ],
+      },
+    ],
+  },
+  // 商业应用模块
+  {
+    id: 'ecommerce',
+    name: '电商运营',
+    description: '产品管理、订单处理、库存控制',
+    category: 'business',
+    commands: [
+      {
+        id: 'product',
+        name: '添加产品',
+        description: '添加新产品到店铺',
+        category: 'ecommerce',
+        params: [
+          {
+            name: 'name',
+            type: 'string',
+            description: '产品名称',
+            required: true,
+          },
+          {
+            name: 'price',
+            type: 'string',
+            description: '产品价格',
+            required: true,
+          },
+        ],
+      },
+      {
+        id: 'order',
+        name: '查看订单',
+        description: '查看订单详情',
+        category: 'ecommerce',
+        params: [
+          {
+            name: 'id',
+            type: 'string',
+            description: '订单ID',
+            required: false,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'marketing',
+    name: '营销工具',
+    description: '营销活动、邮件、社交媒体',
+    category: 'business',
+    commands: [
+      {
+        id: 'campaign',
+        name: '创建活动',
+        description: '创建营销活动',
+        category: 'marketing',
+        params: [
+          {
+            name: 'name',
+            type: 'string',
+            description: '活动名称',
+            required: true,
+          },
+          {
+            name: 'type',
+            type: 'select',
+            description: '活动类型',
+            required: false,
+            default: 'email',
+            options: ['email', 'social', 'sms'],
+          },
+        ],
+      },
+      {
+        id: 'email',
+        name: '发送邮件',
+        description: '发送营销邮件',
+        category: 'marketing',
+        params: [
+          {
+            name: 'template',
+            type: 'string',
+            description: '邮件模板',
+            required: false,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'finance',
+    name: '金融工具',
+    description: '投资理财、预算管理、支出追踪',
+    category: 'business',
+    commands: [
+      {
+        id: 'invest',
+        name: '投资理财',
+        description: '投资建议和规划',
+        category: 'finance',
+        params: [
+          {
+            name: 'amount',
+            type: 'string',
+            description: '投资金额',
+            required: true,
+          },
+          {
+            name: 'type',
+            type: 'select',
+            description: '投资类型',
+            required: false,
+            default: 'stock',
+            options: ['stock', 'bond', 'fund'],
+          },
+        ],
+      },
+      {
+        id: 'budget',
+        name: '预算管理',
+        description: '创建和管理预算',
+        category: 'finance',
+        params: [
+          {
+            name: 'month',
+            type: 'string',
+            description: '预算月份',
+            required: false,
           },
         ],
       },
