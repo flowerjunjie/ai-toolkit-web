@@ -4,8 +4,9 @@ from app.models.module import Module, Command
 
 router = APIRouter()
 
-# 模块数据（来自前端data/modules.ts）
+# 模块数据（完整版，包含所有分类）
 MODULES = [
+    # AI核心分类
     {
         "id": "api",
         "name": "API管理",
@@ -279,6 +280,8 @@ MODULES = [
             },
         ],
     },
+
+    # 开发工具分类
     {
         "id": "coding",
         "name": "AI编码",
@@ -367,6 +370,8 @@ MODULES = [
             },
         ],
     },
+
+    # 数据分析分类
     {
         "id": "analytics",
         "name": "数据分析",
@@ -455,6 +460,192 @@ MODULES = [
                     },
                 ],
             },
+        ],
+    },
+
+    # 云服务分类
+    {
+        "id": "cloud",
+        "name": "云服务",
+        "description": "云平台部署、扩展、监控",
+        "category": "cloud",
+        "commands": [
+            {
+                "id": "deploy",
+                "name": "部署应用",
+                "description": "部署应用到云平台",
+                "category": "cloud",
+                "params": [
+                    {
+                        "name": "app",
+                        "type": "string",
+                        "description": "应用名称",
+                        "required": False,
+                        "default": "myapp",
+                    },
+                    {
+                        "name": "platform",
+                        "type": "select",
+                        "description": "云平台",
+                        "required": False,
+                        "default": "aws",
+                        "options": ["aws", "gcp", "azure", "aliyun"],
+                    },
+                ],
+            },
+            {
+                "id": "scale",
+                "name": "扩展服务",
+                "description": "扩展云服务副本",
+                "category": "cloud",
+                "params": [
+                    {
+                        "name": "service",
+                        "type": "string",
+                        "description": "服务名称",
+                        "required": False,
+                        "default": "web",
+                    },
+                    {
+                        "name": "replicas",
+                        "type": "number",
+                        "description": "副本数量",
+                        "required": False,
+                        "default": 3,
+                    },
+                ],
+            },
+            {
+                "id": "monitor",
+                "name": "监控服务",
+                "description": "监控云服务状态",
+                "category": "cloud",
+                "params": [
+                    {
+                        "name": "service",
+                        "type": "string",
+                        "description": "服务名称",
+                        "required": False,
+                        "default": "web",
+                    },
+                ],
+            },
+            {
+                "id": "log",
+                "name": "查看日志",
+                "description": "查看云服务日志",
+                "category": "cloud",
+                "params": [
+                    {
+                        "name": "service",
+                        "type": "string",
+                        "description": "服务名称",
+                        "required": False,
+                        "default": "web",
+                    },
+                    {
+                        "name": "lines",
+                        "type": "number",
+                        "description": "日志行数",
+                        "required": False,
+                        "default": 100,
+                    },
+                ],
+            },
+            {
+                "id": "cost",
+                "name": "成本估算",
+                "description": "估算云服务成本",
+                "category": "cloud",
+                "params": [],
+            },
+        ],
+    },
+    {
+        "id": "docker",
+        "name": "Docker容器",
+        "description": "Docker容器管理",
+        "category": "cloud",
+        "commands": [
+            {"id": "build", "name": "构建镜像", "description": "构建Docker镜像", "category": "docker", "params": [{"name": "path", "type": "string", "description": "Dockerfile路径", "required": False, "default": "."}]},
+            {"id": "run", "name": "运行容器", "description": "运行Docker容器", "category": "docker", "params": [{"name": "image", "type": "string", "description": "镜像名称", "required": True}]},
+            {"id": "ps", "name": "列出容器", "description": "列出运行中的容器", "category": "docker", "params": []},
+        ],
+    },
+
+    # 商业应用分类
+    {
+        "id": "ecommerce",
+        "name": "电商",
+        "description": "电商相关功能",
+        "category": "business",
+        "commands": [
+            {"id": "product", "name": "产品管理", "description": "管理电商产品", "category": "ecommerce", "params": [{"name": "action", "type": "select", "description": "操作", "required": True, "options": ["list", "add", "delete"]}]},
+            {"id": "order", "name": "订单管理", "description": "管理电商订单", "category": "ecommerce", "params": [{"name": "status", "type": "select", "description": "订单状态", "required": False, "options": ["all", "pending", "paid", "shipped"]}]},
+        ],
+    },
+    {
+        "id": "finance",
+        "name": "金融",
+        "description": "金融相关功能",
+        "category": "business",
+        "commands": [
+            {"id": "analyze", "name": "财务分析", "description": "分析财务数据", "category": "finance", "params": [{"name": "file", "type": "file", "description": "财务数据文件", "required": True}]},
+            {"id": "forecast", "name": "财务预测", "description": "预测财务趋势", "category": "finance", "params": [{"name": "periods", "type": "number", "description": "预测周期", "required": False, "default": 12}]},
+        ],
+    },
+    {
+        "id": "marketing",
+        "name": "营销",
+        "description": "营销相关功能",
+        "category": "business",
+        "commands": [
+            {"id": "campaign", "name": "营销活动", "description": "管理营销活动", "category": "marketing", "params": [{"name": "name", "type": "string", "description": "活动名称", "required": True}]},
+            {"id": "analytics", "name": "营销分析", "description": "分析营销数据", "category": "marketing", "params": []},
+        ],
+    },
+
+    # 科学研究分类
+    {
+        "id": "scientific",
+        "name": "科学计算",
+        "description": "科学研究相关功能",
+        "category": "science",
+        "commands": [
+            {"id": "simulate", "name": "科学模拟", "description": "运行科学模拟", "category": "scientific", "params": [{"name": "model", "type": "string", "description": "模拟模型", "required": True}]},
+            {"id": "analyze", "name": "数据分析", "description": "分析科研数据", "category": "scientific", "params": [{"name": "file", "type": "file", "description": "数据文件", "required": True}]},
+        ],
+    },
+    {
+        "id": "bioinfo",
+        "name": "生物信息",
+        "description": "生物信息学分析",
+        "category": "science",
+        "commands": [
+            {"id": "sequence", "name": "序列分析", "description": "分析生物序列", "category": "bioinfo", "params": [{"name": "file", "type": "file", "description": "序列文件", "required": True}]},
+            {"id": "align", "name": "序列比对", "description": "比对生物序列", "category": "bioinfo", "params": []},
+        ],
+    },
+
+    # 医疗健康分类
+    {
+        "id": "medical",
+        "name": "医疗健康",
+        "description": "医疗健康相关功能",
+        "category": "medical",
+        "commands": [
+            {"id": "diagnosis", "name": "辅助诊断", "description": "AI辅助诊断", "category": "medical", "params": [{"name": "symptoms", "type": "textarea", "description": "症状描述", "required": True}]},
+            {"id": "record", "name": "健康记录", "description": "管理健康记录", "category": "medical", "params": []},
+        ],
+    },
+    {
+        "id": "therapy",
+        "name": "治疗辅助",
+        "description": "治疗辅助工具",
+        "category": "medical",
+        "commands": [
+            {"id": "plan", "name": "治疗计划", "description": "生成治疗计划", "category": "therapy", "params": [{"name": "condition", "type": "string", "description": "病症", "required": True}]},
+            {"id": "remind", "name": "用药提醒", "description": "用药提醒设置", "category": "therapy", "params": []},
         ],
     },
 ]
