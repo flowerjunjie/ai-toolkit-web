@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+
+import React, { useState, useEffect } from 'react'
 import {
   Card,
   Table,
@@ -11,6 +12,8 @@ import {
   Input,
   Tooltip,
   Popconfirm,
+  message,
+  Spin,
 } from 'antd'
 import {
   HistoryOutlined,
@@ -24,189 +27,166 @@ import {
 import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
+import axios from 'axios'
 
 const { Title, Paragraph, Text } = Typography
 const { RangePicker } = DatePicker
 const { Option } = Select
 const { Search } = Input
 
+const apiClient = axios.create({
+  baseURL: '/api',
+  timeout: 30000,
+})
+
 interface HistoryItem {
-  id: string
+  id: number
+  timestamp: string
   module: string
   command: string
-  params: Record<string, any>
-  time: string
-  status: 'success' | 'failed'
+  params: Record&lt;string, any&gt;
+  success: boolean
   output: string
-  starred: boolean
+  created_at: string
 }
 
-const HistoryPage: React.FC = () => {
+interface HistoryResponse {
+  items: HistoryItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
+const HistoryPage: React.FC = () =&gt; {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
   const [searchText, setSearchText] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [moduleFilter, setModuleFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState&lt;string&gt;('all')
+  const [moduleFilter, setModuleFilter] = useState&lt;string&gt;('all')
+  const [data, setData] = useState&lt;HistoryItem[]&gt;([])
 
-  // 模拟数据
-  const mockData: HistoryItem[] = [
-    {
-      id: '1',
-      module: 'api',
-      command: 'test-openai',
-      params: { prompt: '你好' },
-      time: '2026-02-23 10:30:00',
-      status: 'success',
-      output: '你好！我是AI助手...',
-      starred: true,
-    },
-    {
-      id: '2',
-      module: 'models',
-      command: 'list',
-      params: {},
-      time: '2026-02-23 10:25:00',
-      status: 'success',
-      output: '可用模型：llama2, mistral...',
-      starred: false,
-    },
-    {
-      id: '3',
-      module: 'rag',
-      command: 'search',
-      params: { query: '什么是AI？' },
-      time: '2026-02-23 10:20:00',
-      status: 'success',
-      output: '找到5个相关结果...',
-      starred: true,
-    },
-    {
-      id: '4',
-      module: 'analytics',
-      command: 'describe',
-      params: { file: 'data.csv' },
-      time: '2026-02-23 10:15:00',
-      status: 'failed',
-      output: '文件不存在',
-      starred: false,
-    },
-    {
-      id: '5',
-      module: 'coding',
-      command: 'generate',
-      params: { prompt: '创建Flask API' },
-      time: '2026-02-23 10:10:00',
-      status: 'success',
-      output: '```python\nfrom flask import Flask...',
-      starred: false,
-    },
-    {
-      id: '6',
-      module: 'api',
-      command: 'chat',
-      params: { message: '帮我写代码' },
-      time: '2026-02-23 10:05:00',
-      status: 'success',
-      output: '好的，我来帮你...',
-      starred: true,
-    },
-  ]
+  // 获取历史记录
+  const fetchHistory = async () =&gt; {
+    setLoading(true)
+    try {
+      const params: any = {
+        limit: 50,
+        offset: 0,
+      }
+      
+      if (moduleFilter !== 'all') {
+        params.module = moduleFilter
+      }
 
-  const [data, setData] = useState<HistoryItem[]>(mockData)
+      const response = await apiClient.get&lt;HistoryResponse&gt;('/history', { params })
+      setData(response.data.items)
+    } catch (error: any) {
+      message.error('获取历史记录失败: ' + (error.response?.data?.detail || error.message))
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  // 过滤数据
-  const filteredData = data.filter((item) => {
+  // 初始加载
+  useEffect(() =&gt; {
+    fetchHistory()
+  }, [moduleFilter])
+
+  // 过滤数据（客户端过滤）
+  const filteredData = data.filter((item) =&gt; {
     const matchesSearch =
       searchText === '' ||
       item.module.toLowerCase().includes(searchText.toLowerCase()) ||
       item.command.toLowerCase().includes(searchText.toLowerCase())
 
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'success' &amp;&amp; item.success) ||
+      (statusFilter === 'failed' &amp;&amp; !item.success)
+
     const matchesModule = moduleFilter === 'all' || item.module === moduleFilter
 
-    return matchesSearch && matchesStatus && matchesModule
+    return matchesSearch &amp;&amp; matchesStatus &amp;&amp; matchesModule
   })
 
-  const toggleStar = (id: string) => {
-    setData(
-      data.map((item) =>
-        item.id === id ? { ...item, starred: !item.starred } : item
-      )
-    )
+  // 删除历史记录
+  const deleteItem = async (id: number) =&gt; {
+    try {
+      await apiClient.delete(`/history/${id}`)
+      message.success('删除成功')
+      fetchHistory()
+    } catch (error: any) {
+      message.error('删除失败: ' + (error.response?.data?.detail || error.message))
+    }
   }
 
-  const deleteItem = (id: string) => {
-    setData(data.filter((item) => item.id !== id))
+  // 清空历史记录
+  const clearAll = async () =&gt; {
+    try {
+      await apiClient.delete('/history')
+      message.success('清空成功')
+      fetchHistory()
+    } catch (error: any) {
+      message.error('清空失败: ' + (error.response?.data?.detail || error.message))
+    }
   }
 
-  const clearAll = () => {
-    setData([])
-  }
-
-  const reRun = (item: HistoryItem) => {
+  // 重新执行
+  const reRun = (item: HistoryItem) =&gt; {
     navigate(`/tools/${item.module}/${item.command}`)
   }
 
-  const columns: ColumnsType<HistoryItem> = [
+  // 获取所有模块列表（从数据中提取）
+  const modules = ['all', ...Array.from(new Set(data.map((item) =&gt; item.module)))]
+
+  const columns: ColumnsType&lt;HistoryItem&gt; = [
     {
-      title: '收藏',
-      key: 'starred',
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
       width: 60,
-      render: (_, record) => (
-        <Tooltip title={record.starred ? '取消收藏' : '收藏'}>
-          {record.starred ? (
-            <StarFilled
-              style={{ color: '#faad14', cursor: 'pointer' }}
-              onClick={() => toggleStar(record.id)}
-            />
-          ) : (
-            <StarOutlined
-              style={{ cursor: 'pointer' }}
-              onClick={() => toggleStar(record.id)}
-            />
-          )}
-        </Tooltip>
-      ),
     },
     {
       title: '模块',
       dataIndex: 'module',
       key: 'module',
       width: 100,
-      render: (text) => <Tag color="blue">{text}</Tag>,
+      render: (text) =&gt; &lt;Tag color="blue"&gt;{text}&lt;/Tag&gt;,
     },
     {
       title: '命令',
       dataIndex: 'command',
       key: 'command',
       width: 120,
-      render: (text) => <Text strong>{text}</Text>,
+      render: (text) =&gt; &lt;Text strong&gt;{text}&lt;/Text&gt;,
     },
     {
       title: '参数',
       dataIndex: 'params',
       key: 'params',
       width: 200,
-      render: (params) => (
-        <Text type="secondary" ellipsis={{ rows: 1 }}>
+      render: (params) =&gt; (
+        &lt;Text type="secondary" ellipsis={{ rows: 1 }}&gt;
           {JSON.stringify(params)}
-        </Text>
+        &lt;/Text&gt;
       ),
     },
     {
       title: '时间',
-      dataIndex: 'time',
-      key: 'time',
-      width: 160,
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 180,
+      render: (text) =&gt; dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'success',
+      key: 'success',
       width: 80,
-      render: (status) => (
-        <Tag color={status === 'success' ? 'green' : 'red'}>
-          {status === 'success' ? '成功' : '失败'}
-        </Tag>
+      render: (success) =&gt; (
+        &lt;Tag color={success ? 'green' : 'red'}&gt;
+          {success ? '成功' : '失败'}
+        &lt;/Tag&gt;
       ),
     },
     {
@@ -214,128 +194,128 @@ const HistoryPage: React.FC = () => {
       dataIndex: 'output',
       key: 'output',
       ellipsis: true,
-      render: (text) => (
-        <Tooltip title={text}>
-          <Text type="secondary" ellipsis={{ rows: 1 }}>
+      render: (text) =&gt; (
+        &lt;Tooltip title={text}&gt;
+          &lt;Text type="secondary" ellipsis={{ rows: 1 }}&gt;
             {text}
-          </Text>
-        </Tooltip>
+          &lt;/Text&gt;
+        &lt;/Tooltip&gt;
       ),
     },
     {
       title: '操作',
       key: 'action',
-      width: 180,
+      width: 150,
       fixed: 'right',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="重新执行">
-            <Button
+      render: (_, record) =&gt; (
+        &lt;Space size="small"&gt;
+          &lt;Tooltip title="重新执行"&gt;
+            &lt;Button
               type="link"
               size="small"
-              icon={<PlayCircleOutlined />}
-              onClick={() => reRun(record)}
-            >
+              icon={&lt;PlayCircleOutlined /&gt;}
+              onClick={() =&gt; reRun(record)}
+            &gt;
               重跑
-            </Button>
-          </Tooltip>
-          <Tooltip title="删除">
-            <Popconfirm
+            &lt;/Button&gt;
+          &lt;/Tooltip&gt;
+          &lt;Tooltip title="删除"&gt;
+            &lt;Popconfirm
               title="确定要删除这条记录吗？"
-              onConfirm={() => deleteItem(record.id)}
+              onConfirm={() =&gt; deleteItem(record.id)}
               okText="确定"
               cancelText="取消"
-            >
-              <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+            &gt;
+              &lt;Button type="link" danger size="small" icon={&lt;DeleteOutlined /&gt;}&gt;
                 删除
-              </Button>
-            </Popconfirm>
-          </Tooltip>
-        </Space>
+              &lt;/Button&gt;
+            &lt;/Popconfirm&gt;
+          &lt;/Tooltip&gt;
+        &lt;/Space&gt;
       ),
     },
   ]
 
-  const modules = ['all', 'api', 'models', 'rag', 'coding', 'analytics']
-
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2}>📜 历史记录</Title>
-        <Paragraph type="secondary">
+    &lt;div style={{ padding: '24px' }}&gt;
+      &lt;div style={{ marginBottom: '24px' }}&gt;
+        &lt;Title level={2}&gt;📜 历史记录&lt;/Title&gt;
+        &lt;Paragraph type="secondary"&gt;
           查看和管理您的命令执行历史
-        </Paragraph>
-      </div>
+        &lt;/Paragraph&gt;
+      &lt;/div&gt;
 
       {/* 过滤和搜索 */}
-      <Card style={{ marginBottom: '16px' }}>
-        <Space wrap size="middle">
-          <Search
+      &lt;Card style={{ marginBottom: '16px' }}&gt;
+        &lt;Space wrap size="middle"&gt;
+          &lt;Search
             placeholder="搜索模块或命令"
             allowClear
             style={{ width: 300 }}
             onSearch={setSearchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-          <Select
+            onChange={(e) =&gt; setSearchText(e.target.value)}
+          /&gt;
+          &lt;Select
             placeholder="状态筛选"
             style={{ width: 120 }}
             value={statusFilter}
             onChange={setStatusFilter}
-          >
-            <Option value="all">全部</Option>
-            <Option value="success">成功</Option>
-            <Option value="failed">失败</Option>
-          </Select>
-          <Select
+          &gt;
+            &lt;Option value="all"&gt;全部&lt;/Option&gt;
+            &lt;Option value="success"&gt;成功&lt;/Option&gt;
+            &lt;Option value="failed"&gt;失败&lt;/Option&gt;
+          &lt;/Select&gt;
+          &lt;Select
             placeholder="模块筛选"
             style={{ width: 150 }}
             value={moduleFilter}
             onChange={setModuleFilter}
-          >
-            {modules.map((m) => (
-              <Option key={m} value={m}>
+          &gt;
+            {modules.map((m) =&gt; (
+              &lt;Option key={m} value={m}&gt;
                 {m === 'all' ? '全部' : m}
-              </Option>
+              &lt;/Option&gt;
             ))}
-          </Select>
-          <RangePicker style={{ width: 300 }} />
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={() => setData(mockData)}>
+          &lt;/Select&gt;
+          &lt;RangePicker style={{ width: 300 }} /&gt;
+          &lt;Space&gt;
+            &lt;Button icon={&lt;ReloadOutlined /&gt;} onClick={fetchHistory} loading={loading}&gt;
               刷新
-            </Button>
-            <Button icon={<ExportOutlined />}>
+            &lt;/Button&gt;
+            &lt;Button icon={&lt;ExportOutlined /&gt;}&gt;
               导出
-            </Button>
-            <Popconfirm
+            &lt;/Button&gt;
+            &lt;Popconfirm
               title="确定要清空所有记录吗？"
               onConfirm={clearAll}
               okText="确定"
               cancelText="取消"
-            >
-              <Button danger icon={<DeleteOutlined />}>
+            &gt;
+              &lt;Button danger icon={&lt;DeleteOutlined /&gt;}&gt;
                 清空
-              </Button>
-            </Popconfirm>
-          </Space>
-        </Space>
-      </Card>
+              &lt;/Button&gt;
+            &lt;/Popconfirm&gt;
+          &lt;/Space&gt;
+        &lt;/Space&gt;
+      &lt;/Card&gt;
 
       {/* 历史表格 */}
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条记录`,
-          }}
-          scroll={{ x: 1200 }}
-        />
-      </Card>
-    </div>
+      &lt;Card&gt;
+        &lt;Spin spinning={loading}&gt;
+          &lt;Table
+            columns={columns}
+            dataSource={filteredData}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) =&gt; `共 ${total} 条记录`,
+            }}
+            scroll={{ x: 1200 }}
+          /&gt;
+        &lt;/Spin&gt;
+      &lt;/Card&gt;
+    &lt;/div&gt;
   )
 }
 

@@ -1,5 +1,7 @@
+
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.models.execute import ExecuteRequest, ExecuteResponse
+from app.core.database import db
 import subprocess
 import asyncio
 import os
@@ -75,17 +77,33 @@ async def execute_command(request: ExecuteRequest):
         print(f"输出: {output}")
         print(f"错误: {error}")
 
-        if process.returncode != 0:
+        success = process.returncode == 0
+        final_output = output if success else (error or output)
+
+        # 保存历史记录
+        try:
+            db.add_history(
+                module=request.module,
+                command=request.command,
+                params=request.params,
+                success=success,
+                output=final_output,
+            )
+        except Exception as history_error:
+            print(f"保存历史记录失败: {history_error}")
+            # 即使保存历史失败，也不影响命令执行结果
+
+        if not success:
             return ExecuteResponse(
                 success=False,
                 message="命令执行失败",
-                output=error or output,
+                output=final_output,
             )
 
         return ExecuteResponse(
             success=True,
             message="命令执行成功",
-            output=output,
+            output=final_output,
         )
 
     except Exception as e:
