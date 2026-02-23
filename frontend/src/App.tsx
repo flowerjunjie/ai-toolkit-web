@@ -1,3 +1,4 @@
+
 import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from 'antd'
@@ -7,6 +8,7 @@ import ToolPage from './pages/tools/ToolPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import QuickStartPage from './pages/quickstart/QuickStartPage'
 import HistoryPage from './pages/history/HistoryPage'
+import FavoritesPage from './pages/favorites/FavoritesPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import AppHeader from './components/layout/AppHeader'
 import AppSider from './components/layout/AppSider'
@@ -15,23 +17,24 @@ const { Content } = Layout
 
 function App() {
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <AppHeader />
-      <Layout>
-        <AppSider />
-        <Content style={{ padding: '24px', background: '#f0f2f5', minHeight: 'calc(100vh - 64px)' }}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/quickstart" element={<QuickStartPage />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/modules/:category" element={<ModulePage />} />
-            <Route path="/tools/:module/:command" element={<ToolPage />} />
-          </Routes>
-        </Content>
-      </Layout>
-    </Layout>
+    &lt;Layout style={{ minHeight: '100vh' }}&gt;
+      &lt;AppHeader /&gt;
+      &lt;Layout&gt;
+        &lt;AppSider /&gt;
+        &lt;Content style={{ padding: '24px', background: '#f0f2f5', minHeight: 'calc(100vh - 64px)' }}&gt;
+          &lt;Routes&gt;
+            &lt;Route path="/" element={&lt;HomePage /&gt;} /&gt;
+            &lt;Route path="/dashboard" element={&lt;DashboardPage /&gt;} /&gt;
+            &lt;Route path="/quickstart" element={&lt;QuickStartPage /&gt;} /&gt;
+            &lt;Route path="/history" element={&lt;HistoryPage /&gt;} /&gt;
+            &lt;Route path="/favorites" element={&lt;FavoritesPage /&gt;} /&gt;
+            &lt;Route path="/settings" element={&lt;SettingsPage /&gt;} /&gt;
+            &lt;Route path="/modules/:category" element={&lt;ModulePage /&gt;} /&gt;
+            &lt;Route path="/tools/:module/:command" element={&lt;ToolPage /&gt;} /&gt;
+          &lt;/Routes&gt;
+        &lt;/Content&gt;
+      &lt;/Layout&gt;
+    &lt;/Layout&gt;
   )
 }
 
