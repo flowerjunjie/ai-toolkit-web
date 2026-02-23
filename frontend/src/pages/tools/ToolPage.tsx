@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
@@ -13,8 +14,9 @@ import {
   Divider,
   Alert,
   Spin,
+  Popconfirm,
 } from 'antd'
-import { InboxOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { InboxOutlined, PlayCircleOutlined, StarOutlined, StarFilled } from '@ant-design/icons'
 import { getModuleById, getCommandById, Command, Param } from '@/data/modules'
 import axios from 'axios'
 
@@ -28,24 +30,25 @@ const apiClient = axios.create({
   timeout: 60000, // 60秒超时
 })
 
-const ToolPage: React.FC = () => {
-  const { module, command } = useParams<{ module: string; command: string }>()
+const ToolPage: React.FC = () =&gt; {
+  const { module, command } = useParams&lt;{ module: string; command: string }&gt;()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [favoriting, setFavoriting] = useState(false)
+  const [result, setResult] = useState&lt;any&gt;(null)
 
   const moduleInfo = getModuleById(module || '')
   const commandInfo = getCommandById(module || '', command || '')
 
   if (!moduleInfo || !commandInfo) {
     return (
-      <Card>
-        <Alert message="命令不存在" type="error" showIcon />
-      </Card>
+      &lt;Card&gt;
+        &lt;Alert message="命令不存在" type="error" showIcon /&gt;
+      &lt;/Card&gt;
     )
   }
 
-  const handleExecute = async (values: any) => {
+  const handleExecute = async (values: any) =&gt; {
     setLoading(true)
     setResult(null)
 
@@ -85,133 +88,167 @@ const ToolPage: React.FC = () => {
     }
   }
 
-  const renderParamInput = (param: Param) => {
+  const handleFavorite = async () =&gt; {
+    setFavoriting(true)
+    try {
+      await apiClient.post('/history/favorites', {
+        module: moduleInfo.id,
+        command: commandInfo.id,
+        name: commandInfo.name,
+        description: commandInfo.description,
+        params: {},
+      })
+      message.success('收藏成功！')
+    } catch (error: any) {
+      message.error('收藏失败: ' + (error.response?.data?.detail || error.message))
+    } finally {
+      setFavoriting(false)
+    }
+  }
+
+  const renderParamInput = (param: Param) =&gt; {
     switch (param.type) {
       case 'string':
         return (
-          <Input placeholder={`请输入${param.description}`} />
+          &lt;Input placeholder={`请输入${param.description}`} /&gt;
         )
 
       case 'number':
         return (
-          <Input type="number" placeholder={`请输入${param.description}`} />
+          &lt;Input type="number" placeholder={`请输入${param.description}`} /&gt;
         )
 
       case 'boolean':
         return (
-          <Select placeholder={`请选择${param.description}`}>
-            <Option value="true">是</Option>
-            <Option value="false">否</Option>
-          </Select>
+          &lt;Select placeholder={`请选择${param.description}`}&gt;
+            &lt;Option value="true"&gt;是&lt;/Option&gt;
+            &lt;Option value="false"&gt;否&lt;/Option&gt;
+          &lt;/Select&gt;
         )
 
       case 'file':
         return (
-          <Dragger
+          &lt;Dragger
             name="file"
             multiple={false}
-            beforeUpload={() => false}
-            onChange={(info) => {
-              if (info.fileList.length > 0) {
+            beforeUpload={() =&gt; false}
+            onChange={(info) =&gt; {
+              if (info.fileList.length &gt; 0) {
                 form.setFieldValue(param.name, info.fileList[0].originFileObj)
               }
             }}
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-            <p className="ant-upload-hint">{param.description}</p>
-          </Dragger>
+          &gt;
+            &lt;p className="ant-upload-drag-icon"&gt;
+              &lt;InboxOutlined /&gt;
+            &lt;/p&gt;
+            &lt;p className="ant-upload-text"&gt;点击或拖拽文件到此区域上传&lt;/p&gt;
+            &lt;p className="ant-upload-hint"&gt;{param.description}&lt;/p&gt;
+          &lt;/Dragger&gt;
         )
 
       case 'select':
         return (
-          <Select placeholder={`请选择${param.description}`}>
-            {param.options?.map(option => (
-              <Option key={option} value={option}>
+          &lt;Select placeholder={`请选择${param.description}`}&gt;
+            {param.options?.map(option =&gt; (
+              &lt;Option key={option} value={option}&gt;
                 {option}
-              </Option>
+              &lt;/Option&gt;
             ))}
-          </Select>
+          &lt;/Select&gt;
         )
 
       case 'textarea':
         return (
-          <TextArea rows={4} placeholder={`请输入${param.description}`} />
+          &lt;TextArea rows={4} placeholder={`请输入${param.description}`} /&gt;
         )
 
       default:
-        return <Input placeholder={`请输入${param.description}`} />
+        return &lt;Input placeholder={`请输入${param.description}`} /&gt;
     }
   }
 
   return (
-    <div>
-      <Card style={{ marginBottom: '16px' }}>
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-          <Title level={2} style={{ margin: 0 }}>
-            {commandInfo.name}
-          </Title>
-          <Text type="secondary" style={{ fontSize: '14px' }}>
+    &lt;div&gt;
+      &lt;Card style={{ marginBottom: '16px' }}&gt;
+        &lt;Space direction="vertical" size="small" style={{ width: '100%' }}&gt;
+          &lt;Space&gt;
+            &lt;Title level={2} style={{ margin: 0 }}&gt;
+              {commandInfo.name}
+            &lt;/Title&gt;
+            &lt;Popconfirm
+              title="确定要收藏这个命令吗？"
+              onConfirm={handleFavorite}
+              okText="确定"
+              cancelText="取消"
+            &gt;
+              &lt;Button
+                type="text"
+                icon={&lt;StarOutlined /&gt;}
+                loading={favoriting}
+              &gt;
+                收藏
+              &lt;/Button&gt;
+            &lt;/Popconfirm&gt;
+          &lt;/Space&gt;
+          &lt;Text type="secondary" style={{ fontSize: '14px' }}&gt;
             {moduleInfo.name} / {commandInfo.description}
-          </Text>
-        </Space>
-      </Card>
+          &lt;/Text&gt;
+        &lt;/Space&gt;
+      &lt;/Card&gt;
 
-      <Card title="参数配置" style={{ marginBottom: '16px' }}>
-        <Form
+      &lt;Card title="参数配置" style={{ marginBottom: '16px' }}&gt;
+        &lt;Form
           form={form}
           layout="vertical"
           onFinish={handleExecute}
-          initialValues={commandInfo.params.reduce((acc, param) => {
+          initialValues={commandInfo.params.reduce((acc, param) =&gt; {
             if (param.default !== undefined) {
               acc[param.name] = param.default
             }
             return acc
           }, {} as any)}
-        >
-          {commandInfo.params.map((param) => (
-            <Form.Item
+        &gt;
+          {commandInfo.params.map((param) =&gt; (
+            &lt;Form.Item
               key={param.name}
               label={param.description}
               name={param.name}
               rules={[{ required: param.required, message: `请输入${param.description}` }]}
-            >
+            &gt;
               {renderParamInput(param)}
-            </Form.Item>
+            &lt;/Form.Item&gt;
           ))}
 
-          <Form.Item>
-            <Button
+          &lt;Form.Item&gt;
+            &lt;Button
               type="primary"
               htmlType="submit"
-              icon={<PlayCircleOutlined />}
+              icon={&lt;PlayCircleOutlined /&gt;}
               loading={loading}
               size="large"
               block
-            >
+            &gt;
               执行命令
-            </Button>
-          </Form.Item>
-        </Form>
-      </Card>
+            &lt;/Button&gt;
+          &lt;/Form.Item&gt;
+        &lt;/Form&gt;
+      &lt;/Card&gt;
 
-      {result && (
-        <Card title="执行结果">
-          <Alert
+      {result &amp;&amp; (
+        &lt;Card title="执行结果"&gt;
+          &lt;Alert
             message={result.message}
             description={
-              <pre style={{ whiteSpace: 'pre-wrap', marginTop: '12px' }}>
+              &lt;pre style={{ whiteSpace: 'pre-wrap', marginTop: '12px' }}&gt;
                 {result.output}
-              </pre>
+              &lt;/pre&gt;
             }
             type={result.success ? 'success' : 'error'}
             showIcon
-          />
-        </Card>
+          /&gt;
+        &lt;/Card&gt;
       )}
-    </div>
+    &lt;/div&gt;
   )
 }
 
