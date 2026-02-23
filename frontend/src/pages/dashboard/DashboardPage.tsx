@@ -24,7 +24,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 
-const { Title, Paragraph } = Typography
+const { Title, Paragraph, Text } = Typography
 const { Option } = Select
 
 interface CommandHistory {

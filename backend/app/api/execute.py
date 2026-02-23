@@ -12,8 +12,9 @@ router = APIRouter()
 def get_ai_toolkit_path():
     """获取AI Toolkit项目路径"""
     # 从backend目录向上找到ai-toolkit
-    backend_dir = Path(__file__).parent.parent.parent
-    projects_dir = backend_dir.parent
+    backend_dir = Path(__file__).parent.parent.parent  # ai-toolkit-web/backend
+    web_project_dir = backend_dir.parent                 # ai-toolkit-web
+    projects_dir = web_project_dir.parent                # projects
     ai_toolkit_dir = projects_dir / "ai-toolkit"
     
     if ai_toolkit_dir.exists():
