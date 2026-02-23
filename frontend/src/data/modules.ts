@@ -36,7 +36,7 @@ export const categories = [
   { key: 'medical', name: '医疗健康', icon: '🏥', description: '诊断、治疗、健康' },
 ]
 
-// 模块数据（示例 - 第一批5个核心模块 + 商业应用）
+// 模块数据（真实集成版）
 export const modules: Module[] = [
   {
     id: 'api',
@@ -45,60 +45,384 @@ export const modules: Module[] = [
     category: 'ai',
     commands: [
       {
-        id: 'test',
-        name: '测试连接',
-        description: '测试LLM API连接是否正常',
+        id: 'test-openai',
+        name: '测试OpenAI',
+        description: '测试OpenAI API连接',
+        category: 'api',
+        params: [
+          {
+            name: 'key',
+            type: 'string',
+            description: 'OpenAI API密钥',
+            required: false,
+          },
+          {
+            name: 'prompt',
+            type: 'string',
+            description: '测试提示词',
+            required: false,
+            default: '你好',
+          },
+        ],
+      },
+      {
+        id: 'test-anthropic',
+        name: '测试Anthropic',
+        description: '测试Anthropic Claude API',
+        category: 'api',
+        params: [
+          {
+            name: 'key',
+            type: 'string',
+            description: 'Anthropic API密钥',
+            required: false,
+          },
+          {
+            name: 'prompt',
+            type: 'string',
+            description: 'Test prompt',
+            required: false,
+            default: 'Hello',
+          },
+        ],
+      },
+      {
+        id: 'chat',
+        name: '对话模式',
+        description: '与LLM对话',
         category: 'api',
         params: [
           {
             name: 'provider',
             type: 'select',
-            description: 'LLM提供商',
-            required: true,
+            description: '提供商',
+            required: false,
             default: 'openai',
-            options: ['openai', 'anthropic', 'ollama', 'custom'],
+            options: ['openai', 'anthropic'],
           },
           {
-            name: 'api_key',
-            type: 'string',
-            description: 'API密钥',
+            name: 'message',
+            type: 'textarea',
+            description: '消息内容',
             required: true,
           },
         ],
       },
       {
-        id: 'list',
-        name: '列出密钥',
-        description: '查看所有已配置的API密钥',
+        id: 'models',
+        name: '列出模型',
+        description: '列出可用的AI模型',
+        category: 'api',
+        params: [],
+      },
+      {
+        id: 'config',
+        name: '显示配置',
+        description: '显示当前API配置',
         category: 'api',
         params: [],
       },
     ],
   },
   {
-    id: 'analytics',
-    name: '数据分析',
-    description: '统计分析、相关性、回归分析',
-    category: 'data',
+    id: 'models',
+    name: '模型管理',
+    description: 'Ollama本地模型管理',
+    category: 'ai',
     commands: [
       {
-        id: 'descriptive',
-        name: '描述性分析',
-        description: '计算数据的统计指标',
-        category: 'analytics',
+        id: 'list',
+        name: '列出本地模型',
+        description: '显示已安装的模型',
+        category: 'models',
+        params: [],
+      },
+      {
+        id: 'pull',
+        name: '下载模型',
+        description: '从Ollama Hub下载模型',
+        category: 'models',
         params: [
           {
-            name: 'file',
-            type: 'file',
-            description: '数据文件（CSV、Excel等）',
+            name: 'model',
+            type: 'string',
+            description: '模型名称（如llama2）',
+            required: false,
+          },
+          {
+            name: 'name',
+            type: 'string',
+            description: '模型名称（简化版）',
+            required: false,
+            default: 'llama2',
+          },
+        ],
+      },
+      {
+        id: 'run',
+        name: '运行模型',
+        description: '执行模型推理',
+        category: 'models',
+        params: [
+          {
+            name: 'model',
+            type: 'string',
+            description: '模型名称',
+            required: false,
+            default: 'llama2',
+          },
+          {
+            name: 'prompt',
+            type: 'textarea',
+            description: '提示词',
+            required: false,
+            default: '你好，请自我介绍一下',
+          },
+        ],
+      },
+      {
+        id: 'delete',
+        name: '删除模型',
+        description: '删除已安装的模型',
+        category: 'models',
+        params: [
+          {
+            name: 'model',
+            type: 'string',
+            description: '模型名称',
             required: true,
           },
         ],
       },
       {
-        id: 'correlation',
-        name: '相关性分析',
-        description: '分析变量之间的相关性',
+        id: 'info',
+        name: '模型信息',
+        description: '查看模型详情',
+        category: 'models',
+        params: [
+          {
+            name: 'model',
+            type: 'string',
+            description: '模型名称',
+            required: false,
+            default: 'llama2',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'rag',
+    name: 'RAG向量检索',
+    description: 'ChromaDB向量检索系统',
+    category: 'ai',
+    commands: [
+      {
+        id: 'create',
+        name: '创建知识库',
+        description: '创建RAG知识库',
+        category: 'rag',
+        params: [
+          {
+            name: 'name',
+            type: 'string',
+            description: '知识库名称',
+            required: false,
+            default: 'my-knowledge',
+          },
+          {
+            name: 'path',
+            type: 'string',
+            description: '文档目录',
+            required: false,
+            default: './docs',
+          },
+        ],
+      },
+      {
+        id: 'search',
+        name: '语义搜索',
+        description: '在知识库中搜索',
+        category: 'rag',
+        params: [
+          {
+            name: 'name',
+            type: 'string',
+            description: '知识库名称',
+            required: false,
+            default: 'my-knowledge',
+          },
+          {
+            name: 'query',
+            type: 'textarea',
+            description: '搜索查询',
+            required: true,
+          },
+          {
+            name: 'top',
+            type: 'number',
+            description: '返回结果数',
+            required: false,
+            default: 5,
+          },
+        ],
+      },
+      {
+        id: 'list',
+        name: '列出知识库',
+        description: '查看所有知识库',
+        category: 'rag',
+        params: [],
+      },
+      {
+        id: 'delete',
+        name: '删除知识库',
+        description: '删除指定知识库',
+        category: 'rag',
+        params: [
+          {
+            name: 'name',
+            type: 'string',
+            description: '知识库名称',
+            required: true,
+          },
+        ],
+      },
+      {
+        id: 'import',
+        name: '导入文档',
+        description: '导入单个文档到知识库',
+        category: 'rag',
+        params: [
+          {
+            name: 'file',
+            type: 'file',
+            description: '文件路径',
+            required: true,
+          },
+          {
+            name: 'name',
+            type: 'string',
+            description: '知识库名称',
+            required: false,
+            default: 'my-knowledge',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'coding',
+    name: 'AI编码',
+    description: 'AI辅助编程工具',
+    category: 'dev',
+    commands: [
+      {
+        id: 'generate',
+        name: '生成代码',
+        description: '根据需求生成代码',
+        category: 'coding',
+        params: [
+          {
+            name: 'prompt',
+            type: 'textarea',
+            description: '代码需求描述',
+            required: false,
+            default: '创建一个Flask API，包含一个GET端点返回Hello World',
+          },
+          {
+            name: 'language',
+            type: 'select',
+            description: '编程语言',
+            required: false,
+            default: 'python',
+            options: ['python', 'javascript', 'typescript', 'go', 'java'],
+          },
+        ],
+      },
+      {
+        id: 'review',
+        name: '代码审查',
+        description: '审查代码质量',
+        category: 'coding',
+        params: [
+          {
+            name: 'file',
+            type: 'file',
+            description: '代码文件路径',
+            required: true,
+          },
+        ],
+      },
+      {
+        id: 'optimize',
+        name: '代码优化',
+        description: '优化代码性能',
+        category: 'coding',
+        params: [
+          {
+            name: 'file',
+            type: 'file',
+            description: '代码文件路径',
+            required: true,
+          },
+        ],
+      },
+      {
+        id: 'explain',
+        name: '代码解释',
+        description: '解释代码功能',
+        category: 'coding',
+        params: [
+          {
+            name: 'code',
+            type: 'textarea',
+            description: '代码片段',
+            required: false,
+            default: "print('Hello World')",
+          },
+        ],
+      },
+      {
+        id: 'test',
+        name: '运行测试',
+        description: '运行代码测试',
+        category: 'coding',
+        params: [
+          {
+            name: 'file',
+            type: 'file',
+            description: '测试文件路径',
+            required: true,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'analytics',
+    name: '数据分析',
+    description: 'Pandas数据统计和可视化',
+    category: 'data',
+    commands: [
+      {
+        id: 'describe',
+        name: '描述性分析',
+        description: '计算数据统计指标',
+        category: 'analytics',
+        params: [
+          {
+            name: 'file',
+            type: 'file',
+            description: '数据文件（CSV/Excel）',
+            required: true,
+          },
+        ],
+      },
+      {
+        id: 'visualize',
+        name: '数据可视化',
+        description: '生成数据图表',
         category: 'analytics',
         params: [
           {
@@ -108,316 +432,57 @@ export const modules: Module[] = [
             required: true,
           },
           {
-            name: 'method',
-            type: 'select',
-            description: '相关系数方法',
-            required: false,
-            default: 'pearson',
-            options: ['pearson', 'spearman', 'kendall'],
-          },
-        ],
-      },
-      {
-        id: 'regression',
-        name: '回归分析',
-        description: '建立回归模型',
-        category: 'analytics',
-        params: [
-          {
-            name: 'target',
+            name: 'x',
             type: 'string',
-            description: '目标变量',
+            description: 'X轴列名',
             required: true,
           },
           {
-            name: 'features',
-            type: 'textarea',
-            description: '特征变量（逗号分隔）',
-            required: true,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'backup',
-    name: '备份工具',
-    description: '数据备份和恢复',
-    category: 'dev',
-    commands: [
-      {
-        id: 'create',
-        name: '创建备份',
-        description: '创建数据备份',
-        category: 'backup',
-        params: [
-          {
-            name: 'source',
-            type: 'file',
-            description: '源目录',
-            required: true,
-          },
-          {
-            name: 'target',
+            name: 'y',
             type: 'string',
-            description: '目标目录',
+            description: 'Y轴列名',
             required: true,
           },
           {
             name: 'type',
             type: 'select',
-            description: '备份类型',
+            description: '图表类型',
             required: false,
-            default: 'incremental',
-            options: ['full', 'incremental', 'differential'],
+            default: 'line',
+            options: ['line', 'bar', 'scatter', 'pie'],
           },
         ],
       },
       {
-        id: 'restore',
-        name: '恢复备份',
-        description: '从备份恢复数据',
-        category: 'backup',
-        params: [
-          {
-            name: 'backup',
-            type: 'string',
-            description: '备份ID',
-            required: true,
-          },
-          {
-            name: 'target',
-            type: 'string',
-            description: '恢复目标',
-            required: false,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'batch',
-    name: '批处理',
-    description: '批量文件处理',
-    category: 'dev',
-    commands: [
-      {
-        id: 'run',
-        name: '批量运行',
-        description: '批量执行脚本',
-        category: 'batch',
-        params: [
-          {
-            name: 'script',
-            type: 'file',
-            description: '脚本文件',
-            required: true,
-          },
-          {
-            name: 'files',
-            type: 'textarea',
-            description: '文件列表（每行一个）',
-            required: false,
-          },
-        ],
-      },
-      {
-        id: 'rename',
-        name: '批量重命名',
-        description: '批量重命名文件',
-        category: 'batch',
-        params: [
-          {
-            name: 'pattern',
-            type: 'string',
-            description: '文件模式（如 *.txt）',
-            required: true,
-          },
-          {
-            name: 'replacement',
-            type: 'string',
-            description: '替换模式',
-            required: true,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'bio',
-    name: '生物信息学',
-    description: '序列分析、比对、注释',
-    category: 'science',
-    commands: [
-      {
-        id: 'sequence',
-        name: '序列分析',
-        description: '分析DNA/蛋白质序列',
-        category: 'bio',
+        id: 'correlation',
+        name: '相关性分析',
+        description: '分析变量相关性',
+        category: 'analytics',
         params: [
           {
             name: 'file',
             type: 'file',
-            description: '序列文件（FASTA格式）',
+            description: '数据文件',
             required: true,
           },
         ],
       },
       {
-        id: 'align',
-        name: '序列比对',
-        description: '序列比对分析',
-        category: 'bio',
+        id: 'report',
+        name: '生成报告',
+        description: '生成完整分析报告',
+        category: 'analytics',
         params: [
           {
-            name: 'query',
+            name: 'file',
             type: 'file',
-            description: '查询序列',
+            description: '数据文件',
             required: true,
           },
           {
-            name: 'target',
-            type: 'file',
-            description: '目标序列',
-            required: true,
-          },
-          {
-            name: 'method',
-            type: 'select',
-            description: '比对方法',
-            required: false,
-            default: 'blast',
-            options: ['blast', 'bowtie', 'bwa'],
-          },
-        ],
-      },
-    ],
-  },
-  // 商业应用模块
-  {
-    id: 'ecommerce',
-    name: '电商运营',
-    description: '产品管理、订单处理、库存控制',
-    category: 'business',
-    commands: [
-      {
-        id: 'product',
-        name: '添加产品',
-        description: '添加新产品到店铺',
-        category: 'ecommerce',
-        params: [
-          {
-            name: 'name',
+            name: 'output',
             type: 'string',
-            description: '产品名称',
-            required: true,
-          },
-          {
-            name: 'price',
-            type: 'string',
-            description: '产品价格',
-            required: true,
-          },
-        ],
-      },
-      {
-        id: 'order',
-        name: '查看订单',
-        description: '查看订单详情',
-        category: 'ecommerce',
-        params: [
-          {
-            name: 'id',
-            type: 'string',
-            description: '订单ID',
-            required: false,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'marketing',
-    name: '营销工具',
-    description: '营销活动、邮件、社交媒体',
-    category: 'business',
-    commands: [
-      {
-        id: 'campaign',
-        name: '创建活动',
-        description: '创建营销活动',
-        category: 'marketing',
-        params: [
-          {
-            name: 'name',
-            type: 'string',
-            description: '活动名称',
-            required: true,
-          },
-          {
-            name: 'type',
-            type: 'select',
-            description: '活动类型',
-            required: false,
-            default: 'email',
-            options: ['email', 'social', 'sms'],
-          },
-        ],
-      },
-      {
-        id: 'email',
-        name: '发送邮件',
-        description: '发送营销邮件',
-        category: 'marketing',
-        params: [
-          {
-            name: 'template',
-            type: 'string',
-            description: '邮件模板',
-            required: false,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'finance',
-    name: '金融工具',
-    description: '投资理财、预算管理、支出追踪',
-    category: 'business',
-    commands: [
-      {
-        id: 'invest',
-        name: '投资理财',
-        description: '投资建议和规划',
-        category: 'finance',
-        params: [
-          {
-            name: 'amount',
-            type: 'string',
-            description: '投资金额',
-            required: true,
-          },
-          {
-            name: 'type',
-            type: 'select',
-            description: '投资类型',
-            required: false,
-            default: 'stock',
-            options: ['stock', 'bond', 'fund'],
-          },
-        ],
-      },
-      {
-        id: 'budget',
-        name: '预算管理',
-        description: '创建和管理预算',
-        category: 'finance',
-        params: [
-          {
-            name: 'month',
-            type: 'string',
-            description: '预算月份',
+            description: '输出报告路径',
             required: false,
           },
         ],
@@ -426,22 +491,16 @@ export const modules: Module[] = [
   },
 ]
 
-// 根据分类获取模块
-export function getModulesByCategory(category: string): Module[] {
-  if (category === 'all' || category === '') {
-    return modules
-  }
-  return modules.filter(m => m.category === category)
-}
-
-// 根据ID获取模块
+// 工具函数
 export function getModuleById(id: string): Module | undefined {
   return modules.find(m => m.id === id)
 }
 
-// 根据ID获取命令
 export function getCommandById(moduleId: string, commandId: string): Command | undefined {
   const module = getModuleById(moduleId)
-  if (!module) return undefined
-  return module.commands.find(c => c.id === commandId)
+  return module?.commands.find(c => c.id === commandId)
+}
+
+export function getModulesByCategory(category: string): Module[] {
+  return modules.filter(m => m.category === category)
 }

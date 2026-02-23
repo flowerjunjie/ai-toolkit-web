@@ -16,11 +16,17 @@ import {
 } from 'antd'
 import { InboxOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import { getModuleById, getCommandById, Command, Param } from '@/data/modules'
+import axios from 'axios'
 
 const { Title, Paragraph, Text } = Typography
 const { TextArea } = Input
 const { Option } = Select
 const { Dragger } = Upload
+
+const apiClient = axios.create({
+  baseURL: '/api',
+  timeout: 60000, // 60秒超时
+})
 
 const ToolPage: React.FC = () => {
   const { module, command } = useParams<{ module: string; command: string }>()
@@ -44,25 +50,36 @@ const ToolPage: React.FC = () => {
     setResult(null)
 
     try {
-      // TODO: 调用后端API执行命令
-      // const response = await axios.post('/api/execute', {
-      //   module: moduleInfo.id,
-      //   command: commandInfo.id,
-      //   params: values,
-      // })
-
-      // 模拟执行
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      setResult({
-        success: true,
-        message: '命令执行成功！',
-        output: `✅ ${commandInfo.name} 执行完成\n\n执行结果：\n- 状态: 成功\n- 耗时: 1.5s\n- 输出: 模拟输出数据`,
+      console.log('执行命令:', moduleInfo.id, commandInfo.id, values)
+      
+      const response = await apiClient.post('/execute', {
+        module: moduleInfo.id,
+        command: commandInfo.id,
+        params: values,
       })
 
-      message.success('命令执行成功！')
-    } catch (error) {
-      message.error('命令执行失败，请重试')
+      console.log('API响应:', response.data)
+
+      setResult(response.data)
+
+      if (response.data.success) {
+        message.success('命令执行成功！')
+      } else {
+        message.error('命令执行失败: ' + response.data.message)
+      }
+
+    } catch (error: any) {
+      console.error('执行错误:', error)
+      
+      const errorMessage = error.response?.data?.detail || error.message || '未知错误'
+      
+      setResult({
+        success: false,
+        message: '执行失败',
+        output: errorMessage,
+      })
+
+      message.error('命令执行失败: ' + errorMessage)
     } finally {
       setLoading(false)
     }
@@ -189,7 +206,7 @@ const ToolPage: React.FC = () => {
                 {result.output}
               </pre>
             }
-            type="success"
+            type={result.success ? 'success' : 'error'}
             showIcon
           />
         </Card>
