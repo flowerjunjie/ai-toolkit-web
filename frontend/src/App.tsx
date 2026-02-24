@@ -18,6 +18,7 @@ const { Content } = Layout
 
 function App() {
   const { theme: currentTheme } = useThemeStore()
+  useKeyboardShortcuts()
 
   return (
     &lt;ConfigProvider
