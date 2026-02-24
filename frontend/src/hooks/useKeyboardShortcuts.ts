@@ -2,10 +2,12 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useThemeStore } from '@/store/useThemeStore'
+import { useUIStore } from '@/store/useUIStore'
 
 export const useKeyboardShortcuts = () =&gt; {
   const navigate = useNavigate()
   const { toggleTheme } = useThemeStore()
+  const { toggleKeyboardShortcuts } = useUIStore()
 
   useEffect(() =&gt; {
     const handleKeyDown = (e: KeyboardEvent) =&gt; {
@@ -28,6 +30,12 @@ export const useKeyboardShortcuts = () =&gt; {
       if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key === 'd') {
         e.preventDefault()
         toggleTheme()
+      }
+
+      // ?: 显示快捷键帮助
+      if (e.key === '?' &amp;&amp; !e.ctrlKey &amp;&amp; !e.metaKey) {
+        e.preventDefault()
+        toggleKeyboardShortcuts()
       }
 
       // Escape: 返回首页
@@ -70,5 +78,5 @@ export const useKeyboardShortcuts = () =&gt; {
     return () =&gt; {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [navigate, toggleTheme])
+  }, [navigate, toggleTheme, toggleKeyboardShortcuts])
 }

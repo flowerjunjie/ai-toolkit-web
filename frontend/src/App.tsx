@@ -12,12 +12,16 @@ import FavoritesPage from './pages/favorites/FavoritesPage'
 import SettingsPage from './pages/settings/SettingsPage'
 import AppHeader from './components/layout/AppHeader'
 import AppSider from './components/layout/AppSider'
+import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal'
 import { useThemeStore } from './store/useThemeStore'
+import { useUIStore } from './store/useUIStore'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 const { Content } = Layout
 
 function App() {
   const { theme: currentTheme } = useThemeStore()
+  const { showKeyboardShortcuts, setShowKeyboardShortcuts } = useUIStore()
   useKeyboardShortcuts()
 
   return (
@@ -50,6 +54,10 @@ function App() {
           &lt;/Content&gt;
         &lt;/Layout&gt;
       &lt;/Layout&gt;
+      &lt;KeyboardShortcutsModal
+        open={showKeyboardShortcuts}
+        onClose={() =&gt; setShowKeyboardShortcuts(false)}
+      /&gt;
     &lt;/ConfigProvider&gt;
   )
 }

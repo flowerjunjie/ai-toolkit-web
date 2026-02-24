@@ -1,15 +1,17 @@
 
 import React from 'react'
-import { Layout, Typography, Button, Space, Switch } from 'antd'
-import { GithubOutlined, ApiOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons'
+import { Layout, Typography, Button, Space, Switch, Tooltip } from 'antd'
+import { GithubOutlined, ApiOutlined, MoonOutlined, SunOutlined, QuestionCircleOutlined } from '@ant-design/icons'
 import SearchBar from '../common/SearchBar'
 import { useThemeStore } from '@/store/useThemeStore'
+import { useUIStore } from '@/store/useUIStore'
 
 const { Header } = Layout
 const { Title } = Typography
 
 const AppHeader: React.FC = () =&gt; {
   const { theme, toggleTheme } = useThemeStore()
+  const { toggleKeyboardShortcuts } = useUIStore()
 
   return (
     &lt;Header
@@ -36,6 +38,14 @@ const AppHeader: React.FC = () =&gt; {
       &lt;/Space&gt;
 
       &lt;Space style={{ flex: 0, justifyContent: 'flex-end' }}&gt;
+        &lt;Tooltip title="键盘快捷键 (?)&gt;
+          &lt;Button
+            type="text"
+            icon={&lt;QuestionCircleOutlined /&gt;}
+            onClick={toggleKeyboardShortcuts}
+            style={{ color: 'white' }}
+          /&gt;
+        &lt;/Tooltip&gt;
         &lt;Switch
           checkedChildren={&lt;MoonOutlined /&gt;}
           unCheckedChildren={&lt;SunOutlined /&gt;}
