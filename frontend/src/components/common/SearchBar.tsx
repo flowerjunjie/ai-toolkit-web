@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+
+import React, { useState, useCallback, useMemo } from 'react'
 import { Input, AutoComplete } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -14,23 +15,41 @@ interface SearchOption {
   commandId?: string
 }
 
-const SearchBar: React.FC = () => {
+// 防抖函数
+function debounce&lt;T extends (...args: any[]) =&gt; any&gt;(
+  func: T,
+  wait: number
+): (...args: Parameters&lt;T&gt;) =&gt; void {
+  let timeout: NodeJS.Timeout | null = null
+  return (...args: Parameters&lt;T&gt;) =&gt; {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+    timeout = setTimeout(() =&gt; {
+      func(...args)
+    }, wait)
+  }
+}
+
+const SearchBar: React.FC = () =&gt; {
   const navigate = useNavigate()
-  const [options, setOptions] = useState<SearchOption[]>([])
+  const [options, setOptions] = useState&lt;SearchOption[]&gt;([])
   const [value, setValue] = useState('')
 
-  const handleSearch = (searchText: string) => {
+  // 搜索逻辑，使用useCallback优化
+  const performSearch = useCallback((searchText: string) =&gt; {
     if (!searchText) {
       setOptions([])
       return
     }
 
     const newOptions: SearchOption[] = []
+    const lowerSearchText = searchText.toLowerCase()
 
     // 搜索模块
-    modules.forEach(module => {
-      if (module.name.toLowerCase().includes(searchText.toLowerCase()) ||
-          module.description.toLowerCase().includes(searchText.toLowerCase())) {
+    modules.forEach(module =&gt; {
+      if (module.name.toLowerCase().includes(lowerSearchText) ||
+          module.description.toLowerCase().includes(lowerSearchText)) {
         newOptions.push({
           value: module.name,
           label: `${module.name} - ${module.description}`,
@@ -40,12 +59,12 @@ const SearchBar: React.FC = () => {
       }
 
       // 搜索命令
-      module.commands.forEach(command => {
-        if (command.name.toLowerCase().includes(searchText.toLowerCase()) ||
-            command.description.toLowerCase().includes(searchText.toLowerCase())) {
+      module.commands.forEach(command =&gt; {
+        if (command.name.toLowerCase().includes(lowerSearchText) ||
+            command.description.toLowerCase().includes(lowerSearchText)) {
           newOptions.push({
             value: command.name,
-            label: `${module.name} > ${command.name} - ${command.description}`,
+            label: `${module.name} &gt; ${command.name} - ${command.description}`,
             type: 'command',
             moduleId: module.id,
             commandId: command.id,
@@ -55,20 +74,36 @@ const SearchBar: React.FC = () => {
     })
 
     setOptions(newOptions.slice(0, 10)) // 限制显示10个结果
-  }
+  }, [])
 
-  const handleSelect = (value: string, option: SearchOption) => {
-    setValue(value)
+  // 使用防抖的搜索函数
+  const debouncedSearch = useMemo(
+    () =&gt; debounce(performSearch, 300),
+    [performSearch]
+  )
 
-    if (option.type === 'module') {
-      navigate(`/modules/${option.moduleId}`)
-    } else if (option.type === 'command') {
-      navigate(`/tools/${option.moduleId}/${option.commandId}`)
-    }
-  }
+  const handleSearch = useCallback(
+    (searchText: string) =&gt; {
+      debouncedSearch(searchText)
+    },
+    [debouncedSearch]
+  )
+
+  const handleSelect = useCallback(
+    (value: string, option: SearchOption) =&gt; {
+      setValue(value)
+
+      if (option.type === 'module') {
+        navigate(`/modules/${option.moduleId}`)
+      } else if (option.type === 'command') {
+        navigate(`/tools/${option.moduleId}/${option.commandId}`)
+      }
+    },
+    [navigate]
+  )
 
   return (
-    <AutoComplete
+    &lt;AutoComplete
       style={{ width: '100%', maxWidth: '600px' }}
       options={options}
       onSearch={handleSearch}
@@ -76,14 +111,15 @@ const SearchBar: React.FC = () => {
       placeholder="搜索模块或命令..."
       value={value}
       onChange={setValue}
-    >
-      <Input.Search
+      filterOption={false} // 我们自己处理过滤
+    &gt;
+      &lt;Input.Search
         size="large"
         placeholder="搜索模块或命令..."
-        prefix={<SearchOutlined />}
+        prefix={&lt;SearchOutlined /&gt;}
         allowClear
-      />
-    </AutoComplete>
+      /&gt;
+    &lt;/AutoComplete&gt;
   )
 }
 
