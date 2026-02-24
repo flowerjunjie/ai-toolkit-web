@@ -1,5 +1,8 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 from app.core.config import settings
 from app.api import api_router
 
@@ -20,6 +23,12 @@ app.add_middleware(
 
 # 包含API路由
 app.include_router(api_router, prefix=settings.API_PREFIX)
+
+
+@app.on_event("startup")
+async def startup():
+    """启动时初始化缓存"""
+    FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
 
 @app.get("/")
