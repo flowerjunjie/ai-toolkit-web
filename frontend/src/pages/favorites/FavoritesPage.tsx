@@ -11,7 +11,6 @@ import {
   Tooltip,
   Popconfirm,
   message,
-  Spin,
   Input,
 } from 'antd'
 import {
@@ -24,6 +23,8 @@ import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import axios from 'axios'
+import Loading from '@/components/common/Loading'
+import ErrorAlert from '@/components/common/ErrorAlert'
 
 const { Title, Paragraph, Text } = Typography
 const { Option } = Select
@@ -54,6 +55,7 @@ interface FavoritesResponse {
 const FavoritesPage: React.FC = () =&gt; {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState&lt;any&gt;(null)
   const [searchText, setSearchText] = useState('')
   const [moduleFilter, setModuleFilter] = useState&lt;string&gt;('all')
   const [data, setData] = useState&lt;FavoriteItem[]&gt;([])
@@ -61,12 +63,18 @@ const FavoritesPage: React.FC = () =&gt; {
   // 获取收藏列表
   const fetchFavorites = async () =&gt; {
     setLoading(true)
+    setError(null)
     try {
       const response = await apiClient.get&lt;FavoritesResponse&gt;('/history/favorites', {
         params: { limit: 50, offset: 0 }
       })
       setData(response.data.items)
     } catch (error: any) {
+      setError({
+        message: '获取收藏列表失败',
+        description: error.response?.data?.detail || error.message,
+        details: error.stack,
+      })
       message.error('获取收藏列表失败: ' + (error.response?.data?.detail || error.message))
     } finally {
       setLoading(false)
@@ -112,6 +120,12 @@ const FavoritesPage: React.FC = () =&gt; {
   const modules = ['all', ...Array.from(new Set(data.map((item) =&gt; item.module)))]
 
   const columns: ColumnsType&lt;FavoriteItem&gt; = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 60,
+    },
     {
       title: '收藏',
       key: 'starred',
@@ -202,14 +216,35 @@ const FavoritesPage: React.FC = () =&gt; {
     },
   ]
 
+  if (loading) {
+    return (
+      &lt;div style={{ padding: '24px' }}&gt;
+        &lt;Loading tip="正在加载收藏列表，请稍候..." fullscreen={false} /&gt;
+      &lt;/div&gt;
+    )
+  }
+
   return (
     &lt;div style={{ padding: '24px' }}&gt;
       &lt;div style={{ marginBottom: '24px' }}&gt;
-        &lt;Title level={2}&gt;⭐ 收藏&lt;/Title&gt;
+        &lt;Title level={2}&gt;⭐ 我的收藏&lt;/Title&gt;
         &lt;Paragraph type="secondary"&gt;
           管理您收藏的常用命令
         &lt;/Paragraph&gt;
       &lt;/div&gt;
+
+      {error &amp;&amp; (
+        &lt;Card style={{ marginBottom: '16px' }}&gt;
+          &lt;ErrorAlert
+            message={error.message}
+            description={error.description}
+            type="error"
+            showDetails
+            details={error.details}
+            onRetry={fetchFavorites}
+          /&gt;
+        &lt;/Card&gt;
+      )}
 
       {/* 过滤和搜索 */}
       &lt;Card style={{ marginBottom: '16px' }}&gt;
@@ -241,19 +276,17 @@ const FavoritesPage: React.FC = () =&gt; {
 
       {/* 收藏表格 */}
       &lt;Card&gt;
-        &lt;Spin spinning={loading}&gt;
-          &lt;Table
-            columns={columns}
-            dataSource={filteredData}
-            rowKey="id"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) =&gt; `共 ${total} 条收藏`,
-            }}
-            scroll={{ x: 1200 }}
-          /&gt;
-        &lt;/Spin&gt;
+        &lt;Table
+          columns={columns}
+          dataSource={filteredData}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) =&gt; `共 ${total} 条收藏`,
+          }}
+          scroll={{ x: 1200 }}
+        /&gt;
       &lt;/Card&gt;
     &lt;/div&gt;
   )

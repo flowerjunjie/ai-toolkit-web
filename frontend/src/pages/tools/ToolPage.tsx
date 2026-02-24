@@ -19,6 +19,8 @@ import {
 import { InboxOutlined, PlayCircleOutlined, StarOutlined, StarFilled } from '@ant-design/icons'
 import { getModuleById, getCommandById, Command, Param } from '@/data/modules'
 import axios from 'axios'
+import Loading from '@/components/common/Loading'
+import ErrorAlert from '@/components/common/ErrorAlert'
 
 const { Title, Paragraph, Text } = Typography
 const { TextArea } = Input
@@ -36,6 +38,7 @@ const ToolPage: React.FC = () =&gt; {
   const [loading, setLoading] = useState(false)
   const [favoriting, setFavoriting] = useState(false)
   const [result, setResult] = useState&lt;any&gt;(null)
+  const [error, setError] = useState&lt;any&gt;(null)
 
   const moduleInfo = getModuleById(module || '')
   const commandInfo = getCommandById(module || '', command || '')
@@ -43,7 +46,11 @@ const ToolPage: React.FC = () =&gt; {
   if (!moduleInfo || !commandInfo) {
     return (
       &lt;Card&gt;
-        &lt;Alert message="命令不存在" type="error" showIcon /&gt;
+        &lt;ErrorAlert
+          message="命令不存在"
+          description="请检查您访问的URL是否正确"
+          type="error"
+        /&gt;
       &lt;/Card&gt;
     )
   }
@@ -51,6 +58,7 @@ const ToolPage: React.FC = () =&gt; {
   const handleExecute = async (values: any) =&gt; {
     setLoading(true)
     setResult(null)
+    setError(null)
 
     try {
       console.log('执行命令:', moduleInfo.id, commandInfo.id, values)
@@ -76,6 +84,12 @@ const ToolPage: React.FC = () =&gt; {
       
       const errorMessage = error.response?.data?.detail || error.message || '未知错误'
       
+      setError({
+        message: '执行失败',
+        description: errorMessage,
+        details: error.stack,
+      })
+
       setResult({
         success: false,
         message: '执行失败',
@@ -167,6 +181,14 @@ const ToolPage: React.FC = () =&gt; {
     }
   }
 
+  if (loading) {
+    return (
+      &lt;div style={{ padding: '24px' }}&gt;
+        &lt;Loading tip="正在执行命令，请稍候..." fullscreen={false} /&gt;
+      &lt;/div&gt;
+    )
+  }
+
   return (
     &lt;div&gt;
       &lt;Card style={{ marginBottom: '16px' }}&gt;
@@ -195,6 +217,22 @@ const ToolPage: React.FC = () =&gt; {
           &lt;/Text&gt;
         &lt;/Space&gt;
       &lt;/Card&gt;
+
+      {error &amp;&amp; (
+        &lt;Card style={{ marginBottom: '16px' }}&gt;
+          &lt;ErrorAlert
+            message={error.message}
+            description={error.description}
+            type="error"
+            showDetails
+            details={error.details}
+            onRetry={() =&gt; {
+              setError(null)
+              form.submit()
+            }}
+          /&gt;
+        &lt;/Card&gt;
+      )}
 
       &lt;Card title="参数配置" style={{ marginBottom: '16px' }}&gt;
         &lt;Form

@@ -13,7 +13,6 @@ import {
   Tooltip,
   Popconfirm,
   message,
-  Spin,
 } from 'antd'
 import {
   HistoryOutlined,
@@ -28,6 +27,8 @@ import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import axios from 'axios'
+import Loading from '@/components/common/Loading'
+import ErrorAlert from '@/components/common/ErrorAlert'
 
 const { Title, Paragraph, Text } = Typography
 const { RangePicker } = DatePicker
@@ -60,6 +61,7 @@ interface HistoryResponse {
 const HistoryPage: React.FC = () =&gt; {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState&lt;any&gt;(null)
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState&lt;string&gt;('all')
   const [moduleFilter, setModuleFilter] = useState&lt;string&gt;('all')
@@ -68,6 +70,7 @@ const HistoryPage: React.FC = () =&gt; {
   // 获取历史记录
   const fetchHistory = async () =&gt; {
     setLoading(true)
+    setError(null)
     try {
       const params: any = {
         limit: 50,
@@ -81,6 +84,11 @@ const HistoryPage: React.FC = () =&gt; {
       const response = await apiClient.get&lt;HistoryResponse&gt;('/history', { params })
       setData(response.data.items)
     } catch (error: any) {
+      setError({
+        message: '获取历史记录失败',
+        description: error.response?.data?.detail || error.message,
+        details: error.stack,
+      })
       message.error('获取历史记录失败: ' + (error.response?.data?.detail || error.message))
     } finally {
       setLoading(false)
@@ -109,7 +117,6 @@ const HistoryPage: React.FC = () =&gt; {
     return matchesSearch &amp;&amp; matchesStatus &amp;&amp; matchesModule
   })
 
-  // 删除历史记录
   const deleteItem = async (id: number) =&gt; {
     try {
       await apiClient.delete(`/history/${id}`)
@@ -120,7 +127,6 @@ const HistoryPage: React.FC = () =&gt; {
     }
   }
 
-  // 清空历史记录
   const clearAll = async () =&gt; {
     try {
       await apiClient.delete('/history')
@@ -131,12 +137,10 @@ const HistoryPage: React.FC = () =&gt; {
     }
   }
 
-  // 重新执行
   const reRun = (item: HistoryItem) =&gt; {
     navigate(`/tools/${item.module}/${item.command}`)
   }
 
-  // 获取所有模块列表（从数据中提取）
   const modules = ['all', ...Array.from(new Set(data.map((item) =&gt; item.module)))]
 
   const columns: ColumnsType&lt;HistoryItem&gt; = [
@@ -175,7 +179,7 @@ const HistoryPage: React.FC = () =&gt; {
       title: '时间',
       dataIndex: 'created_at',
       key: 'created_at',
-      width: 180,
+      width: 160,
       render: (text) =&gt; dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
@@ -205,7 +209,7 @@ const HistoryPage: React.FC = () =&gt; {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 180,
       fixed: 'right',
       render: (_, record) =&gt; (
         &lt;Space size="small"&gt;
@@ -236,6 +240,14 @@ const HistoryPage: React.FC = () =&gt; {
     },
   ]
 
+  if (loading) {
+    return (
+      &lt;div style={{ padding: '24px' }}&gt;
+        &lt;Loading tip="正在加载历史记录，请稍候..." fullscreen={false} /&gt;
+      &lt;/div&gt;
+    )
+  }
+
   return (
     &lt;div style={{ padding: '24px' }}&gt;
       &lt;div style={{ marginBottom: '24px' }}&gt;
@@ -244,6 +256,19 @@ const HistoryPage: React.FC = () =&gt; {
           查看和管理您的命令执行历史
         &lt;/Paragraph&gt;
       &lt;/div&gt;
+
+      {error &amp;&amp; (
+        &lt;Card style={{ marginBottom: '16px' }}&gt;
+          &lt;ErrorAlert
+            message={error.message}
+            description={error.description}
+            type="error"
+            showDetails
+            details={error.details}
+            onRetry={fetchHistory}
+          /&gt;
+        &lt;/Card&gt;
+      )}
 
       {/* 过滤和搜索 */}
       &lt;Card style={{ marginBottom: '16px' }}&gt;
@@ -301,19 +326,17 @@ const HistoryPage: React.FC = () =&gt; {
 
       {/* 历史表格 */}
       &lt;Card&gt;
-        &lt;Spin spinning={loading}&gt;
-          &lt;Table
-            columns={columns}
-            dataSource={filteredData}
-            rowKey="id"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) =&gt; `共 ${total} 条记录`,
-            }}
-            scroll={{ x: 1200 }}
-          /&gt;
-        &lt;/Spin&gt;
+        &lt;Table
+          columns={columns}
+          dataSource={filteredData}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) =&gt; `共 ${total} 条记录`,
+          }}
+          scroll={{ x: 1200 }}
+        /&gt;
       &lt;/Card&gt;
     &lt;/div&gt;
   )
