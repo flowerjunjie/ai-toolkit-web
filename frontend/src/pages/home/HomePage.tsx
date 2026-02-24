@@ -1,6 +1,6 @@
 
 import React from 'react'
-import { Card, Row, Col, Typography, Space, Statistic } from 'antd'
+import { Card, Row, Col, Typography, Space, Statistic, Button } from 'antd'
 import {
   ApiOutlined,
   RocketOutlined,
@@ -11,6 +11,7 @@ import {
   MedicineBoxOutlined,
   HistoryOutlined,
   StarOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 
@@ -89,38 +90,90 @@ const HomePage: React.FC = () =&gt; {
     { title: '总模块', value: 108, suffix: '个' },
     { title: '总命令', value: 2096, suffix: '+' },
     { title: '代码行数', value: 705, suffix: 'K+' },
-    { title: 'Git提交', value: 112, suffix: '次' },
+    { title: 'Git提交', value: 116, suffix: '次' },
   ]
 
   const quickLinks = [
-    { title: '快速开始', path: '/quickstart', icon: &lt;RocketOutlined /&gt; },
-    { title: '仪表盘', path: '/dashboard', icon: &lt;ApiOutlined /&gt; },
-    { title: '历史记录', path: '/history', icon: &lt;HistoryOutlined /&gt; },
-    { title: '我的收藏', path: '/favorites', icon: &lt;StarOutlined /&gt; },
+    { title: '快速开始', path: '/quickstart', icon: &lt;RocketOutlined /&gt;, color: '#1890ff' },
+    { title: '仪表盘', path: '/dashboard', icon: &lt;ApiOutlined /&gt;, color: '#52c41a' },
+    { title: '历史记录', path: '/history', icon: &lt;HistoryOutlined /&gt;, color: '#faad14' },
+    { title: '我的收藏', path: '/favorites', icon: &lt;StarOutlined /&gt;, color: '#faad14' },
   ]
 
   return (
     &lt;div style={{ padding: '24px' }}&gt;
-      &lt;div style={{ marginBottom: '32px' }}&gt;
-        &lt;Title level={2}&gt;🚀 AI Toolkit - 本地AI工具箱&lt;/Title&gt;
-        &lt;Paragraph style={{ fontSize: '16px' }}&gt;
-          108个功能模块，2096+命令，覆盖AI、数据、开发、云服务、商业、科学、医疗等多个领域
-        &lt;/Paragraph&gt;
-        &lt;Paragraph type="secondary"&gt;
-          Web界面让非技术用户也能轻松使用强大的AI工具！支持历史记录和收藏功能，提升使用效率！
-        &lt;/Paragraph&gt;
-      &lt;/div&gt;
+      {/* Hero区域 */}
+      &lt;Card
+        style={{
+          marginBottom: '32px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          borderRadius: '12px',
+        }}
+      &gt;
+        &lt;div style={{ padding: '24px 0' }}&gt;
+          &lt;Title level={1} style={{ color: 'white', margin: 0 }}&gt;
+            🚀 AI Toolkit - 本地AI工具箱
+          &lt;/Title&gt;
+          &lt;Paragraph style={{ fontSize: '18px', color: 'rgba(255,255,255,0.9)', margin: '16px 0' }}&gt;
+            108个功能模块，2096+命令，覆盖AI、数据、开发、云服务、商业、科学、医疗等多个领域
+          &lt;/Paragraph&gt;
+          &lt;Paragraph style={{ fontSize: '16px', color: 'rgba(255,255,255,0.8)', margin: '0 0 24px' }}&gt;
+            Web界面让非技术用户也能轻松使用强大的AI工具！支持历史记录和收藏功能，提升使用效率！
+          &lt;/Paragraph&gt;
+          &lt;Space size="middle"&gt;
+            &lt;Button
+              type="primary"
+              size="large"
+              icon={&lt;PlayCircleOutlined /&gt;}
+              onClick={() =&gt; navigate('/modules')}
+              style={{
+                background: 'white',
+                color: '#764ba2',
+                border: 'none',
+                fontWeight: 'bold',
+              }}
+            &gt;
+              立即开始
+            &lt;/Button&gt;
+            &lt;Button
+              size="large"
+              onClick={() =&gt; navigate('/quickstart')}
+              style={{
+                background: 'transparent',
+                color: 'white',
+                border: '2px solid white',
+                fontWeight: 'bold',
+              }}
+            &gt;
+              快速开始
+            &lt;/Button&gt;
+          &lt;/Space&gt;
+        &lt;/div&gt;
+      &lt;/Card&gt;
 
       {/* 统计数据 */}
       &lt;Row gutter={[16, 16]} style={{ marginBottom: '32px' }}&gt;
         {stats.map((stat) =&gt; (
           &lt;Col xs={12} sm={6} key={stat.title}&gt;
-            &lt;Card&gt;
+            &lt;Card
+              hoverable
+              style={{
+                borderRadius: '8px',
+                transition: 'transform 0.3s',
+              }}
+              onMouseEnter={(e) =&gt; {
+                e.currentTarget.style.transform = 'translateY(-4px)'
+              }}
+              onMouseLeave={(e) =&gt; {
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+            &gt;
               &lt;Statistic
                 title={stat.title}
                 value={stat.value}
                 suffix={stat.suffix}
-                valueStyle={{ color: '#3f8600' }}
+                valueStyle={{ color: '#3f8600', fontWeight: 'bold' }}
               /&gt;
             &lt;/Card&gt;
           &lt;/Col&gt;
@@ -129,7 +182,7 @@ const HomePage: React.FC = () =&gt; {
 
       {/* 快速入口 */}
       &lt;Title level={3} style={{ marginBottom: '16px' }}&gt;
-        快速入口
+        ⚡ 快速入口
       &lt;/Title&gt;
       &lt;Row gutter={[16, 16]} style={{ marginBottom: '32px' }}&gt;
         {quickLinks.map((link) =&gt; (
@@ -137,10 +190,21 @@ const HomePage: React.FC = () =&gt; {
             &lt;Card
               hoverable
               onClick={() =&gt; navigate(link.path)}
-              style={{ height: '100%' }}
+              style={{
+                height: '100%',
+                borderRadius: '8px',
+                borderLeft: `4px solid ${link.color}`,
+                transition: 'transform 0.3s',
+              }}
+              onMouseEnter={(e) =&gt; {
+                e.currentTarget.style.transform = 'translateY(-4px)'
+              }}
+              onMouseLeave={(e) =&gt; {
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
             &gt;
               &lt;Space&gt;
-                &lt;span style={{ fontSize: '24px' }}&gt;{link.icon}&lt;/span&gt;
+                &lt;span style={{ fontSize: '28px', color: link.color }}&gt;{link.icon}&lt;/span&gt;
                 &lt;Title level={4} style={{ margin: 0 }}&gt;
                   {link.title}
                 &lt;/Title&gt;
@@ -152,7 +216,7 @@ const HomePage: React.FC = () =&gt; {
 
       {/* 核心功能 */}
       &lt;Title level={3} style={{ marginBottom: '16px' }}&gt;
-        核心功能
+        🔧 核心功能
       &lt;/Title&gt;
       &lt;Row gutter={[16, 16]}&gt;
         {features.map((feature) =&gt; (
@@ -168,7 +232,19 @@ const HomePage: React.FC = () =&gt; {
                   navigate(`/modules/${feature.category}`)
                 }
               }}
-              style={{ height: '100%' }}
+              style={{
+                height: '100%',
+                borderRadius: '8px',
+                transition: 'transform 0.3s, box-shadow 0.3s',
+              }}
+              onMouseEnter={(e) =&gt; {
+                e.currentTarget.style.transform = 'translateY(-8px)'
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'
+              }}
+              onMouseLeave={(e) =&gt; {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
             &gt;
               &lt;Space direction="vertical" size="middle" style={{ width: '100%' }}&gt;
                 &lt;div&gt;{feature.icon}&lt;/div&gt;
