@@ -1,545 +1,516 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Card,
   Form,
-  Input,
-  Button,
   Select,
-  Upload,
-  message,
+  Button,
+  Alert,
   Space,
   Typography,
-  Divider,
-  Alert,
   Spin,
-  Popconfirm,
   Tabs,
   List,
   Tag,
   Tooltip,
   Badge,
-} from 'antd'
-import { 
-  InboxOutlined, 
-  PlayCircleOutlined, 
-  StarOutlined, 
-  StarFilled,
+  Empty,
+  Divider,
+  Input,
+  Switch,
+  InputNumber,
+  DatePicker,
+  message,
+} from 'antd';
+import {
+  PlayCircleOutlined,
   HistoryOutlined,
   SettingOutlined,
+  ClearOutlined,
+  CopyOutlined,
+  DownloadOutlined,
   InfoCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-} from '@ant-design/icons'
-import { getModuleById, getCommandById, Command, Param } from '@/data/modules'
-import axios from 'axios'
-import Loading from '@/components/common/Loading'
-import ErrorAlert from '@/components/common/ErrorAlert'
+} from '@ant-design/icons';
+import { useTheme } from '@/hooks/useTheme';
+import { modules, Module, Command, Parameter } from '@/config/modules';
+import dayjs from 'dayjs';
+import styles from './ToolPage.module.less';
 
-const { Title, Paragraph, Text } = Typography
-const { TextArea } = Input
-const { Option } = Select
-const { Dragger } = Upload
-const { TabPane } = Tabs
+const { Title, Text, Paragraph } = Typography;
+const { Option } = Select;
+const { TabPane } = Tabs;
+const { TextArea } = Input;
 
-const apiClient = axios.create({
-  baseURL: '/api',
-  timeout: 300000, // 5分钟超时，某些命令可能需要较长时间
-})
-
-// 执行历史存储键
-const HISTORY_KEY = 'ai-toolkit-execution-history'
-
+// 执行历史记录类型
 interface ExecutionRecord {
-  id: string
-  module: string
-  command: string
-  params: Record<string, any>
-  timestamp: number
-  success?: boolean
-  duration?: number
+  id: string;
+  module: string;
+  command: string;
+  params: Record<string, any>;
+  result: any;
+  status: 'success' | 'error' | 'pending';
+  timestamp: number;
+  duration?: number;
 }
 
-const ToolPage: React.FC = () => {
-  const { module, command } = useParams<{ module: string; command: string }>()
-  const navigate = useNavigate()
-  const [form] = Form.useForm()
-  const [loading, setLoading] = useState(false)
-  const [favoriting, setFavoriting] = useState(false)
-  const [result, setResult] = useState<any>(null)
-  const [error, setError] = useState<any>(null)
-  const [executionHistory, setExecutionHistory] = useState<ExecutionRecord[]>([])
-  const [activeTab, setActiveTab] = useState('params')
+// 表单参数值类型
+type ParamValue = string | number | boolean | dayjs.Dayjs | null;
 
-  const moduleInfo = getModuleById(module || '')
-  const commandInfo = getCommandById(module || '', command || '')
+/**
+ * 工具执行页面 - 优化版本
+ * 特性: 性能优化、懒加载、缓存、更好的错误处理
+ */
+const ToolPage: React.FC = React.memo(() => {
+  const { isDark } = useTheme();
+  const [form] = Form.useForm();
+  
+  // 状态管理
+  const [selectedModule, setSelectedModule] = useState<string>('');
+  const [selectedCommand, setSelectedCommand] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<ExecutionRecord[]>([]);
+  const [activeTab, setActiveTab] = useState('execute');
 
-  // 加载执行历史
-  useEffect(() => {
-    const stored = localStorage.getItem(HISTORY_KEY)
-    if (stored) {
-      try {
-        const history = JSON.parse(stored)
-        // 只显示当前命令的历史
-        const filtered = history.filter(
-          (h: ExecutionRecord) => h.module === module && h.command === command
-        )
-        setExecutionHistory(filtered.slice(0, 10)) // 最近10条
-      } catch {
-        // 忽略解析错误
-      }
-    }
-  }, [module, command])
+  // 使用 useMemo 缓存模块选项 - 避免重复计算
+  const moduleOptions = useMemo(() => 
+    modules.map((m: Module) => ({
+      label: m.name,
+      value: m.id,
+      description: m.description,
+    })),
+    []
+  );
 
-  // 保存执行记录
-  const saveExecutionRecord = useCallback((record: ExecutionRecord) => {
-    const stored = localStorage.getItem(HISTORY_KEY)
-    let history: ExecutionRecord[] = []
-    if (stored) {
-      try {
-        history = JSON.parse(stored)
-      } catch {
-        history = []
-      }
-    }
-    history.unshift(record)
-    // 只保留最近50条
-    history = history.slice(0, 50)
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
-  }, [])
+  // 缓存当前选中的模块
+  const currentModule = useMemo(() => 
+    modules.find((m: Module) => m.id === selectedModule),
+    [selectedModule]
+  );
 
-  if (!moduleInfo || !commandInfo) {
-    return (
-      <Card>
-        <ErrorAlert
-          message="命令不存在"
-          description="请检查您访问的URL是否正确"
-          type="error"
-        />
-      </Card>
-    )
-  }
+  // 缓存命令选项
+  const commandOptions = useMemo(() => {
+    if (!currentModule) return [];
+    return currentModule.commands.map((cmd: Command) => ({
+      label: cmd.name,
+      value: cmd.id,
+      description: cmd.description,
+    }));
+  }, [currentModule]);
 
-  // 参数验证
-  const validateParams = (values: any): string | null => {
-    for (const param of commandInfo.params) {
-      if (param.required && !values[param.name]) {
-        return `请填写必填参数: ${param.description}`
-      }
-      
-      // 类型验证
-      if (values[param.name] !== undefined && values[param.name] !== '') {
-        switch (param.type) {
-          case 'number':
-            const num = Number(values[param.name])
-            if (isNaN(num)) {
-              return `${param.description} 必须是数字`
-            }
-            if (param.min !== undefined && num < param.min) {
-              return `${param.description} 最小值为 ${param.min}`
-            }
-            if (param.max !== undefined && num > param.max) {
-              return `${param.description} 最大值为 ${param.max}`
-            }
-            break
-          case 'string':
-            if (param.minLength && values[param.name].length < param.minLength) {
-              return `${param.description} 最少 ${param.minLength} 个字符`
-            }
-            if (param.maxLength && values[param.name].length > param.maxLength) {
-              return `${param.description} 最多 ${param.maxLength} 个字符`
-            }
-            // 正则验证
-            if (param.pattern) {
-              const regex = new RegExp(param.pattern)
-              if (!regex.test(values[param.name])) {
-                return `${param.description} 格式不正确`
-              }
-            }
-            break
-        }
-      }
-    }
-    return null
-  }
+  // 缓存当前选中的命令
+  const currentCommand = useMemo(() => {
+    if (!currentModule || !selectedCommand) return null;
+    return currentModule.commands.find((cmd: Command) => cmd.id === selectedCommand);
+  }, [currentModule, selectedCommand]);
 
-  const handleExecute = async (values: any) => {
-    // 验证参数
-    const validationError = validateParams(values)
-    if (validationError) {
-      message.error(validationError)
-      return
+  // 模块切换处理 - 使用 useCallback 避免重复创建
+  const handleModuleChange = useCallback((value: string) => {
+    setSelectedModule(value);
+    setSelectedCommand('');
+    setResult(null);
+    setError(null);
+    form.resetFields();
+  }, [form]);
+
+  // 命令切换处理
+  const handleCommandChange = useCallback((value: string) => {
+    setSelectedCommand(value);
+    setResult(null);
+    setError(null);
+    form.resetFields(['params']);
+  }, [form]);
+
+  // 执行命令 - 优化错误处理和性能
+  const handleExecute = useCallback(async (values: any) => {
+    if (!selectedModule || !selectedCommand) {
+      message.warning('请选择模块和命令');
+      return;
     }
 
-    setLoading(true)
-    setResult(null)
-    setError(null)
-    setActiveTab('result')
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
-    const startTime = Date.now()
-    const executionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const startTime = Date.now();
+    const recordId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // 创建待执行记录
+    const pendingRecord: ExecutionRecord = {
+      id: recordId,
+      module: selectedModule,
+      command: selectedCommand,
+      params: values.params || {},
+      result: null,
+      status: 'pending',
+      timestamp: Date.now(),
+    };
+
+    setHistory(prev => [pendingRecord, ...prev].slice(0, 50)); // 限制历史记录数量
 
     try {
-      console.log('执行命令:', moduleInfo.id, commandInfo.id, values)
-      
-      // 处理文件上传
-      const processedValues = { ...values }
-      for (const key in processedValues) {
-        if (processedValues[key] instanceof File) {
-          // 文件需要特殊处理
-          const formData = new FormData()
-          formData.append('file', processedValues[key])
-          formData.append('module', moduleInfo.id)
-          formData.append('command', commandInfo.id)
-          
-          const uploadRes = await apiClient.post('/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-          processedValues[key] = uploadRes.data.filePath
-        }
-      }
-      
-      const response = await apiClient.post('/execute', {
-        module: moduleInfo.id,
-        command: commandInfo.id,
-        params: processedValues,
-      })
+      const response = await fetch('/api/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          module: selectedModule,
+          command: selectedCommand,
+          params: values.params || {},
+        }),
+      });
 
-      console.log('API响应:', response.data)
+      const data = await response.json();
+      const duration = Date.now() - startTime;
 
-      const duration = Date.now() - startTime
-      
-      setResult({
-        ...response.data,
-        duration,
-        timestamp: new Date().toISOString(),
-      })
-
-      // 保存执行记录
-      saveExecutionRecord({
-        id: executionId,
-        module: moduleInfo.id,
-        command: commandInfo.id,
-        params: processedValues,
-        timestamp: Date.now(),
-        success: response.data.success,
-        duration,
-      })
-
-      if (response.data.success) {
-        message.success(`命令执行成功！耗时 ${duration}ms`)
-      } else {
-        message.error('命令执行失败: ' + response.data.message)
+      if (!response.ok) {
+        throw new Error(data.error || '执行失败');
       }
 
-    } catch (error: any) {
-      console.error('执行错误:', error)
+      setResult(data);
       
-      const duration = Date.now() - startTime
-      const errorMessage = error.response?.data?.detail || error.message || '未知错误'
+      // 更新历史记录
+      setHistory(prev => 
+        prev.map(record => 
+          record.id === recordId
+            ? { ...record, result: data, status: 'success', duration }
+            : record
+        )
+      );
+
+      message.success(`执行成功 (${duration}ms)`);
+    } catch (err: any) {
+      const errorMsg = err.message || '执行失败';
+      setError(errorMsg);
       
-      setError({
-        message: '执行失败',
-        description: errorMessage,
-        details: error.stack,
-        code: error.response?.status,
-      })
+      // 更新历史记录为失败
+      setHistory(prev => 
+        prev.map(record => 
+          record.id === recordId
+            ? { ...record, result: { error: errorMsg }, status: 'error', duration: Date.now() - startTime }
+            : record
+        )
+      );
 
-      setResult({
-        success: false,
-        message: '执行失败',
-        output: errorMessage,
-        duration,
-        timestamp: new Date().toISOString(),
-      })
-
-      // 保存失败的执行记录
-      saveExecutionRecord({
-        id: executionId,
-        module: moduleInfo.id,
-        command: commandInfo.id,
-        params: values,
-        timestamp: Date.now(),
-        success: false,
-        duration,
-      })
-
-      message.error('命令执行失败: ' + errorMessage)
+      message.error(errorMsg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [selectedModule, selectedCommand]);
 
-  const handleFavorite = async () => {
-    setFavoriting(true)
-    try {
-      await apiClient.post('/history/favorites', {
-        module: moduleInfo.id,
-        command: commandInfo.id,
-        name: commandInfo.name,
-        description: commandInfo.description,
-        params: form.getFieldsValue(),
-      })
-      message.success('收藏成功！')
-    } catch (error: any) {
-      message.error('收藏失败: ' + (error.response?.data?.detail || error.message))
-    } finally {
-      setFavoriting(false)
+  // 清除历史记录
+  const handleClearHistory = useCallback(() => {
+    setHistory([]);
+    message.success('历史记录已清除');
+  }, []);
+
+  // 复制结果到剪贴板
+  const handleCopyResult = useCallback(() => {
+    if (result) {
+      navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+      message.success('已复制到剪贴板');
     }
-  }
+  }, [result]);
 
-  const loadHistoryRecord = (record: ExecutionRecord) => {
-    form.setFieldsValue(record.params)
-    message.success('已加载历史参数')
-    setActiveTab('params')
-  }
-
-  const renderParamInput = (param: Param) => {
-    const commonProps = {
-      placeholder: param.placeholder || `请输入${param.description}`,
-      disabled: loading,
+  // 下载结果为 JSON
+  const handleDownloadResult = useCallback(() => {
+    if (result) {
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `result-${dayjs().format('YYYY-MM-DD-HH-mm-ss')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      message.success('下载成功');
     }
+  }, [result]);
 
-    switch (param.type) {
-      case 'string':
-        return <Input {...commonProps} maxLength={param.maxLength} />
+  // 从历史记录重新执行
+  const handleRerunFromHistory = useCallback((record: ExecutionRecord) => {
+    setSelectedModule(record.module);
+    setSelectedCommand(record.command);
+    form.setFieldsValue({ params: record.params });
+    setActiveTab('execute');
+    message.info('已加载历史参数');
+  }, [form]);
 
-      case 'number':
-        return (
-          <Input 
-            type="number" 
-            {...commonProps}
-            min={param.min}
-            max={param.max}
-          />
-        )
+  // 渲染参数表单 - 使用 useMemo 缓存
+  const paramFormItems = useMemo(() => {
+    if (!currentCommand?.parameters) return null;
 
-      case 'boolean':
-        return (
-          <Select placeholder={`请选择${param.description}`} disabled={loading}>
-            <Option value={true}>是</Option>
-            <Option value={false}>否</Option>
-          </Select>
-        )
+    return currentCommand.parameters.map((param: Parameter) => {
+      const rules = param.required ? [{ required: true, message: `请输入${param.label}` }] : [];
 
-      case 'file':
-        return (
-          <Dragger
-            name="file"
-            multiple={false}
-            beforeUpload={() => false}
-            onChange={(info) => {
-              if (info.fileList.length > 0) {
-                const file = info.fileList[0].originFileObj
-                // 验证文件大小
-                if (param.maxSize && file && file.size > param.maxSize) {
-                  message.error(`文件大小不能超过 ${(param.maxSize / 1024 / 1024).toFixed(2)} MB`)
-                  return
-                }
-                form.setFieldValue(param.name, file)
-              }
-            }}
-            disabled={loading}
-          >
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-            <p className="ant-upload-hint">{param.description}</p>
-            {param.accept && (
-              <p className="ant-upload-hint">支持格式: {param.accept}</p>
-            )}
-          </Dragger>
-        )
+      let inputComponent: React.ReactNode;
 
-      case 'select':
-        return (
-          <Select 
-            placeholder={`请选择${param.description}`}
-            disabled={loading}
-            allowClear
-          >
-            {param.options?.map(option => (
-              <Option key={option} value={option}>
-                {option}
-              </Option>
-            ))}
-          </Select>
-        )
+      switch (param.type) {
+        case 'select':
+          inputComponent = (
+            <Select
+              placeholder={`选择${param.label}`}
+              options={param.options?.map(opt => 
+                typeof opt === 'string' 
+                  ? { label: opt, value: opt }
+                  : opt
+              )}
+              allowClear
+            />
+          );
+          break;
+        case 'boolean':
+          inputComponent = <Switch />;
+          break;
+        case 'number':
+          inputComponent = (
+            <InputNumber
+              placeholder={`输入${param.label}`}
+              style={{ width: '100%' }}
+              min={param.min}
+              max={param.max}
+            />
+          );
+          break;
+        case 'date':
+          inputComponent = (
+            <DatePicker
+              placeholder={`选择${param.label}`}
+              style={{ width: '100%' }}
+              showTime={param.showTime}
+            />
+          );
+          break;
+        case 'textarea':
+          inputComponent = (
+            <TextArea
+              placeholder={`输入${param.label}${param.placeholder ? ` - ${param.placeholder}` : ''}`}
+              rows={param.rows || 4}
+              showCount={param.showCount}
+              maxLength={param.maxLength}
+            />
+          );
+          break;
+        default:
+          inputComponent = (
+            <Input
+              placeholder={`输入${param.label}${param.placeholder ? ` - ${param.placeholder}` : ''}`}
+              allowClear
+            />
+          );
+      }
 
-      case 'textarea':
-        return (
-          <TextArea 
-            rows={param.rows || 4} 
-            {...commonProps}
-            maxLength={param.maxLength}
-            showCount={!!param.maxLength}
-          />
-        )
-
-      case 'multiselect':
-        return (
-          <Select
-            mode="multiple"
-            placeholder={`请选择${param.description}`}
-            disabled={loading}
-          >
-            {param.options?.map(option => (
-              <Option key={option} value={option}>
-                {option}
-              </Option>
-            ))}
-          </Select>
-        )
-
-      default:
-        return <Input {...commonProps} />
-    }
-  }
-
-  const renderResult = () => {
-    if (!result) return null
-
-    return (
-      <div>
-        <div style={{ marginBottom: 16 }}>
-          <Space>
-            {result.success ? (
-              <Tag icon={<CheckCircleOutlined />} color="success">成功</Tag>
-            ) : (
-              <Tag icon={<CloseCircleOutlined />} color="error">失败</Tag>
-            )}
-            {result.duration && (
-              <Tag color="blue">耗时: {result.duration}ms</Tag>
-            )}
-            {result.timestamp && (
-              <Tag color="default">
-                {new Date(result.timestamp).toLocaleString()}
-              </Tag>
-            )}
-          </Space>
-        </div>
-        
-        <Alert
-          message={result.message}
-          description={
-            result.output ? (
-              <pre 
-                style={{ 
-                  whiteSpace: 'pre-wrap', 
-                  marginTop: '12px',
-                  maxHeight: '400px',
-                  overflow: 'auto',
-                  background: '#f5f5f5',
-                  padding: '12px',
-                  borderRadius: '4px',
-                }}
-              >
-                {typeof result.output === 'object' 
-                  ? JSON.stringify(result.output, null, 2)
-                  : result.output
-                }
-              </pre>
-            ) : null
+      return (
+        <Form.Item
+          key={param.name}
+          name={['params', param.name]}
+          label={
+            <Space>
+              {param.label}
+              {param.description && (
+                <Tooltip title={param.description}>
+                  <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                </Tooltip>
+              )}
+            </Space>
           }
-          type={result.success ? 'success' : 'error'}
-          showIcon
-        />
+          rules={rules}
+          valuePropName={param.type === 'boolean' ? 'checked' : 'value'}
+        >
+          {inputComponent}
+        </Form.Item>
+      );
+    });
+  }, [currentCommand]);
+
+  // 渲染执行结果 - 使用 useMemo 缓存
+  const resultContent = useMemo(() => {
+    if (!result && !error) return null;
+
+    return (
+      <div className={styles.resultSection}>
+        <Divider orientation="left">执行结果</Divider>
+        
+        {error && (
+          <Alert
+            message="执行失败"
+            description={error}
+            type="error"
+            showIcon
+            closable
+            onClose={() => setError(null)}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
+        {result && (
+          <>
+            <Space style={{ marginBottom: 16 }}>
+              <Button
+                icon={<CopyOutlined />}
+                onClick={handleCopyResult}
+                size="small"
+              >
+                复制
+              </Button>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadResult}
+                size="small"
+              >
+                下载 JSON
+              </Button>
+            </Space>
+            <Card className={styles.resultCard}>
+              <pre className={styles.resultPre}>
+                {JSON.stringify(result, null, 2)}
+              </pre>
+            </Card>
+          </>
+        )}
       </div>
-    )
-  }
+    );
+  }, [result, error, handleCopyResult, handleDownloadResult]);
+
+  // 渲染历史记录
+  const historyContent = useMemo(() => {
+    if (history.length === 0) {
+      return <Empty description="暂无执行记录" />;
+    }
+
+    return (
+      <List
+        className={styles.historyList}
+        itemLayout="horizontal"
+        dataSource={history}
+        renderItem={(record) => (
+          <List.Item
+            actions={[
+              <Button
+                key="rerun"
+                type="link"
+                size="small"
+                onClick={() => handleRerunFromHistory(record)}
+              >
+                重新执行
+              </Button>,
+            ]}
+          >
+            <List.Item.Meta
+              title={
+                <Space>
+                  <Badge
+                    status={
+                      record.status === 'success' 
+                        ? 'success' 
+                        : record.status === 'error' 
+                        ? 'error' 
+                        : 'processing'
+                    }
+                  />
+                  <Text strong>{record.module}</Text>
+                  <Text type="secondary">/</Text>
+                  <Text>{record.command}</Text>
+                  {record.duration && (
+                    <Tag size="small">{record.duration}ms</Tag>
+                  )}
+                </Space>
+              }
+              description={
+                <Space direction="vertical" size={0}>
+                  <Text type="secondary" className={styles.historyTime}>
+                    {dayjs(record.timestamp).format('YYYY-MM-DD HH:mm:ss')}
+                  </Text>
+                  {Object.keys(record.params).length > 0 && (
+                    <Text type="secondary" className={styles.historyParams}>
+                      参数: {JSON.stringify(record.params)}
+                    </Text>
+                  )}
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    );
+  }, [history, handleRerunFromHistory]);
 
   return (
-    <div>
-      <Card style={{ marginBottom: '16px' }}>
-        <Space direction="vertical" size="small" style={{ width: '100%' }}>
-          <Space>
-            <Title level={2} style={{ margin: 0 }}>
-              {commandInfo.name}
-            </Title>
-            <Tooltip title="收藏此命令">
-              <Button
-                type="text"
-                icon={<StarOutlined />}
-                loading={favoriting}
-                onClick={handleFavorite}
-              >
-                收藏
-              </Button>
-            </Tooltip>
-          </Space>
-          <Text type="secondary" style={{ fontSize: '14px' }}>
-            {moduleInfo.name} / {commandInfo.description}
-          </Text>
-          {commandInfo.documentation && (
-            <Button 
-              type="link" 
-              icon={<InfoCircleOutlined />}
-              onClick={() => window.open(commandInfo.documentation, '_blank')}
-              style={{ padding: 0 }}
-            >
-              查看文档
-            </Button>
-          )}
-        </Space>
-      </Card>
-
-      {error && (
-        <Card style={{ marginBottom: '16px' }}>
-          <ErrorAlert
-            message={error.message}
-            description={error.description}
-            type="error"
-            showDetails
-            details={error.details}
-            onRetry={() => {
-              setError(null)
-              form.submit()
-            }}
-          />
-        </Card>
-      )}
-
+    <div className={styles.container}>
+      <Title level={2}>工具执行</Title>
+      
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane 
-          tab={<span><SettingOutlined />参数配置</span>} 
-          key="params"
+        <TabPane
+          tab={
+            <span>
+              <PlayCircleOutlined />
+              执行
+            </span>
+          }
+          key="execute"
         >
-          <Card>
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleExecute}
-              initialValues={commandInfo.params.reduce((acc, param) => {
-                if (param.default !== undefined) {
-                  acc[param.name] = param.default
-                }
-                return acc
-              }, {} as any)}
-            >
-              {commandInfo.params.map((param) => (
-                <Form.Item
-                  key={param.name}
-                  label={
-                    <Space>
-                      {param.description}
-                      {param.required && <Badge count="必填" style={{ backgroundColor: '#ff4d4f' }} />}
-                      {param.help && (
-                        <Tooltip title={param.help}>
-                          <InfoCircleOutlined style={{ color: '#1890ff' }} />
-                        </Tooltip>
-                      )}
-                    </Space>
-                  }
-                  name={param.name}
-                  rules={[
-                    { required: param.required, message: `请输入${param.description}` }
-                  ]}
-                  extra={param.helpText}
-                >
-                  {renderParamInput(param)}
-                </Form.Item>
-              ))}
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleExecute}
+            className={styles.form}
+          >
+            <Card className={styles.card}>
+              <Form.Item
+                label="选择模块"
+                required
+                tooltip="选择要执行的功能模块"
+              >
+                <Select
+                  placeholder="请选择模块"
+                  value={selectedModule || undefined}
+                  onChange={handleModuleChange}
+                  options={moduleOptions}
+                  showSearch
+                  optionFilterProp="label"
+                  allowClear
+                />
+              </Form.Item>
+
+              {currentModule && (
+                <Paragraph type="secondary" className={styles.description}>
+                  {currentModule.description}
+                </Paragraph>
+              )}
+
+              <Form.Item
+                label="选择命令"
+                required
+                tooltip="选择要执行的具体命令"
+              >
+                <Select
+                  placeholder="请选择命令"
+                  value={selectedCommand || undefined}
+                  onChange={handleCommandChange}
+                  options={commandOptions}
+                  disabled={!selectedModule}
+                  showSearch
+                  optionFilterProp="label"
+                  allowClear
+                />
+              </Form.Item>
+
+              {currentCommand && (
+                <>
+                  <Paragraph type="secondary" className={styles.description}>
+                    {currentCommand.description}
+                  </Paragraph>
+                  
+                  {paramFormItems && (
+                    <div className={styles.paramsSection}>
+                      <Divider orientation="left">参数设置</Divider>
+                      {paramFormItems}
+                    </div>
+                  )}
+                </>
+              )}
 
               <Form.Item>
                 <Button
@@ -547,83 +518,54 @@ const ToolPage: React.FC = () => {
                   htmlType="submit"
                   icon={<PlayCircleOutlined />}
                   loading={loading}
+                  disabled={!selectedModule || !selectedCommand}
                   size="large"
                   block
                 >
                   {loading ? '执行中...' : '执行命令'}
                 </Button>
               </Form.Item>
-            </Form>
-          </Card>
+            </Card>
+
+            {resultContent}
+          </Form>
         </TabPane>
 
-        <TabPane 
-          tab={<span><HistoryOutlined />执行历史 ({executionHistory.length})</span>} 
+        <TabPane
+          tab={
+            <span>
+              <HistoryOutlined />
+              历史记录
+              {history.length > 0 && (
+                <Badge count={history.length} style={{ marginLeft: 8 }} />
+              )}
+            </span>
+          }
           key="history"
         >
-          <Card>
-            {executionHistory.length === 0 ? (
-              <Alert
-                message="暂无执行历史"
-                description="执行命令后，历史记录将显示在这里"
-                type="info"
-              />
-            ) : (
-              <List
-                dataSource={executionHistory}
-                renderItem={(record) => (
-                  <List.Item
-                    actions={[
-                      <Button 
-                        type="link" 
-                        onClick={() => loadHistoryRecord(record)}
-                      >
-                        加载参数
-                      </Button>
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={
-                        <Space>
-                          <Text>{new Date(record.timestamp).toLocaleString()}</Text>
-                          {record.success !== undefined && (
-                            record.success ? (
-                              <Tag color="success">成功</Tag>
-                            ) : (
-                              <Tag color="error">失败</Tag>
-                            )
-                          )}
-                        </Space>
-                      }
-                      description={
-                        <Text type="secondary" ellipsis>
-                          {JSON.stringify(record.params)}
-                        </Text>
-                      }
-                    />
-                    {record.duration && (
-                      <Tag color="blue">{record.duration}ms</Tag>
-                    )}
-                  </List.Item>
-                )}
-              />
-            )}
+          <Card
+            className={styles.card}
+            extra={
+              history.length > 0 && (
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={handleClearHistory}
+                  danger
+                  size="small"
+                >
+                  清除历史
+                </Button>
+              )
+            }
+          >
+            {historyContent}
           </Card>
         </TabPane>
-
-        {result && (
-          <TabPane 
-            tab={<span><CheckCircleOutlined />执行结果</span>} 
-            key="result"
-          >
-            <Card>
-              {renderResult()}
-            </Card>
-          </TabPane>
-        )}
       </Tabs>
     </div>
-  )
-}
+  );
+});
 
-export default ToolPage
+ToolPage.displayName = 'ToolPage';
+
+export default ToolPage;

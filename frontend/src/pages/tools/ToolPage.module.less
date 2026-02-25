@@ -1,0 +1,127 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.card {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.form {
+  width: 100%;
+}
+
+.description {
+  margin: -8px 0 16px 0;
+  font-size: 14px;
+}
+
+.paramsSection {
+  background: var(--ant-color-bg-container-disabled, #f5f5f5);
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.resultSection {
+  margin-top: 24px;
+}
+
+.resultCard {
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+}
+
+.resultPre {
+  margin: 0;
+  padding: 16px;
+  background: var(--ant-color-bg-layout, #f0f2f5);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.historyList {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.historyTime {
+  font-size: 12px;
+}
+
+.historyParams {
+  font-size: 12px;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 暗色主题适配 */
+[data-theme='dark'] {
+  .card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .paramsSection {
+    background: var(--ant-color-bg-container-disabled, #1f1f1f);
+  }
+
+  .resultPre {
+    background: var(--ant-color-bg-layout, #141414);
+  }
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .paramsSection {
+    padding: 12px;
+  }
+
+  .resultPre {
+    padding: 12px;
+    font-size: 12px;
+  }
+}
+
+/* 加载动画 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingIcon {
+  animation: spin 1s linear infinite;
+}
+
+/* 平滑过渡 */
+.card,
+.paramsSection,
+.resultCard {
+  transition: all 0.3s ease;
+}
+
+/* 悬停效果 */
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='dark'] .card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}

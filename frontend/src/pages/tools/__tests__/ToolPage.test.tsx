@@ -1,191 +1,172 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
-import ToolPage from '../ToolPage'
-import * as modules from '@/data/modules'
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import ToolPage from '../ToolPage';
+import { BrowserRouter } from 'react-router-dom';
 
-// Mock antd message
-vi.mock('antd', async () => {
-  const actual = await vi.importActual('antd')
-  return {
-    ...actual,
-    message: {
-      success: vi.fn(),
-      error: vi.fn(),
-    },
-  }
-})
+// Mock fetch
+global.fetch = jest.fn();
 
-// Mock axios
-vi.mock('axios', () => ({
-  default: {
-    create: () => ({
-      post: vi.fn(),
-    }),
-  },
-}))
+const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+
+const renderWithRouter = (component: React.ReactElement) => {
+  return render(<BrowserRouter>{component}</BrowserRouter>);
+};
 
 describe('ToolPage', () => {
-  const mockModule = {
-    id: 'test-module',
-    name: '测试模块',
-    description: '测试模块描述',
-    icon: 'ToolOutlined',
-    commands: [
-      {
-        id: 'test-command',
-        name: '测试命令',
-        description: '测试命令描述',
-        params: [
-          {
-            name: 'input',
-            type: 'string',
-            description: '输入参数',
-            required: true,
-          },
-          {
-            name: 'optional',
-            type: 'number',
-            description: '可选参数',
-            required: false,
-            default: 10,
-          },
-        ],
-      },
-    ],
-  }
-
   beforeEach(() => {
-    vi.clearAllMocks()
-    localStorage.clear()
-    
-    // Mock getModuleById and getCommandById
-    vi.spyOn(modules, 'getModuleById').mockReturnValue(mockModule)
-    vi.spyOn(modules, 'getCommandById').mockReturnValue(mockModule.commands[0])
-  })
+    mockFetch.mockClear();
+  });
 
-  it('renders command not found when command does not exist', () => {
-    vi.spyOn(modules, 'getCommandById').mockReturnValue(undefined)
-    
-    render(
-      <BrowserRouter>
-        <ToolPage />
-      </BrowserRouter>
-    )
-    
-    expect(screen.getByText('命令不存在')).toBeInTheDocument()
-    expect(screen.getByText('请检查您访问的URL是否正确')).toBeInTheDocument()
-  })
+  describe('渲染测试', () => {
+    it('应该正确渲染页面标题', () => {
+      renderWithRouter(<ToolPage />);
+      expect(screen.getByText('工具执行')).toBeInTheDocument();
+    });
 
-  it('renders command form correctly', () => {
-    render(
-      <BrowserRouter>
-        <ToolPage />
-      </BrowserRouter>
-    )
-    
-    expect(screen.getByText('测试命令')).toBeInTheDocument()
-    expect(screen.getByText('测试模块 / 测试命令描述')).toBeInTheDocument()
-    expect(screen.getByText('输入参数')).toBeInTheDocument()
-    expect(screen.getByText('可选参数')).toBeInTheDocument()
-  })
+    it('应该显示模块选择器', () => {
+      renderWithRouter(<ToolPage />);
+      expect(screen.getByText('选择模块')).toBeInTheDocument();
+    });
 
-  it('validates required parameters', async () => {
-    render(
-      <BrowserRouter>
-        <ToolPage />
-      </BrowserRouter>
-    )
-    
-    const submitButton = screen.getByText('执行命令')
-    fireEvent.click(submitButton)
-    
-    await waitFor(() => {
-      expect(screen.getByText('请输入输入参数')).toBeInTheDocument()
-    })
-  })
+    it('应该显示命令选择器', () => {
+      renderWithRouter(<ToolPage />);
+      expect(screen.getByText('选择命令')).toBeInTheDocument();
+    });
 
-  it('validates number type parameters', async () => {
-    render(
-      <BrowserRouter>
-        <ToolPage />
-      </BrowserRouter>
-    )
-    
-    // Fill in required field
-    const inputField = screen.getByPlaceholderText('请输入输入参数')
-    fireEvent.change(inputField, { target: { value: 'test input' } })
-    
-    // Fill in invalid number
-    const numberField = screen.getByPlaceholderText('请输入可选参数')
-    fireEvent.change(numberField, { target: { value: 'not a number' } })
-    
-    const submitButton = screen.getByText('执行命令')
-    fireEvent.click(submitButton)
-    
-    // Should show validation error
-    await waitFor(() => {
-      // Form validation should prevent submission
-      expect(submitButton).toBeInTheDocument()
-    })
-  })
+    it('应该显示执行按钮', () => {
+      renderWithRouter(<ToolPage />);
+      expect(screen.getByText('执行命令')).toBeInTheDocument();
+    });
+  });
 
-  it('loads default values correctly', () => {
-    render(
-      <BrowserRouter>
-        <ToolPage />
-      </BrowserRouter>
-    )
-    
-    // Check that default value is loaded
-    const numberField = screen.getByPlaceholderText('请输入可选参数')
-    expect(numberField).toHaveValue(10)
-  })
+  describe('交互测试', () => {
+    it('选择模块后应该更新命令列表', async () => {
+      renderWithRouter(<ToolPage />);
+      
+      const moduleSelect = screen.getByTestId('module-select');
+      fireEvent.mouseDown(moduleSelect);
+      
+      // 等待下拉菜单打开
+      await waitFor(() => {
+        expect(screen.getByText('API 管理')).toBeInTheDocument();
+      });
+    });
 
-  it('switches between tabs', async () => {
-    render(
-      <BrowserRouter>
-        <ToolPage />
-      </BrowserRouter>
-    )
-    
-    // Should show params tab by default
-    expect(screen.getByText('参数配置')).toBeInTheDocument()
-    
-    // Click history tab
-    const historyTab = screen.getByText(/执行历史/)
-    fireEvent.click(historyTab)
-    
-    await waitFor(() => {
-      expect(screen.getByText('暂无执行历史')).toBeInTheDocument()
-    })
-  })
+    it('点击执行按钮应该调用 API', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, output: 'test output' }),
+      } as Response);
 
-  it('displays execution history from localStorage', () => {
-    const history = [
-      {
-        id: '1',
-        module: 'test-module',
-        command: 'test-command',
-        params: { input: 'test' },
-        timestamp: Date.now(),
-        success: true,
-        duration: 100,
-      },
-    ]
-    localStorage.setItem('ai-toolkit-execution-history', JSON.stringify(history))
-    
-    render(
-      <BrowserRouter>
-        <ToolPage />
-      </BrowserRouter>
-    )
-    
-    // Click history tab
-    const historyTab = screen.getByText(/执行历史/)
-    fireEvent.click(historyTab)
-    
-    expect(screen.getByText('加载参数')).toBeInTheDocument()
-    expect(screen.getByText('100ms')).toBeInTheDocument()
-  })
-})
+      renderWithRouter(<ToolPage />);
+      
+      const executeButton = screen.getByText('执行命令');
+      fireEvent.click(executeButton);
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/execute',
+          expect.any(Object)
+        );
+      });
+    });
+
+    it('应该显示加载状态', async () => {
+      mockFetch.mockImplementationOnce(() => 
+        new Promise(resolve => setTimeout(resolve, 1000))
+      );
+
+      renderWithRouter(<ToolPage />);
+      
+      const executeButton = screen.getByText('执行命令');
+      fireEvent.click(executeButton);
+
+      expect(screen.getByText('执行中...')).toBeInTheDocument();
+    });
+  });
+
+  describe('结果展示测试', () => {
+    it('应该正确显示执行结果', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ 
+          success: true, 
+          output: 'Command executed successfully' 
+        }),
+      } as Response);
+
+      renderWithRouter(<ToolPage />);
+      
+      const executeButton = screen.getByText('执行命令');
+      fireEvent.click(executeButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Command executed successfully')).toBeInTheDocument();
+      });
+    });
+
+    it('应该正确显示错误信息', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ 
+          success: false, 
+          error: 'Command failed' 
+        }),
+      } as Response);
+
+      renderWithRouter(<ToolPage />);
+      
+      const executeButton = screen.getByText('执行命令');
+      fireEvent.click(executeButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Command failed')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('表单测试', () => {
+    it('应该根据命令显示对应的参数表单', async () => {
+      renderWithRouter(<ToolPage />);
+      
+      // 选择需要参数的模块和命令
+      const moduleSelect = screen.getByTestId('module-select');
+      fireEvent.mouseDown(moduleSelect);
+      
+      await waitFor(() => {
+        expect(screen.getByText('API 管理')).toBeInTheDocument();
+      });
+    });
+
+    it('应该验证必填字段', async () => {
+      renderWithRouter(<ToolPage />);
+      
+      const executeButton = screen.getByText('执行命令');
+      fireEvent.click(executeButton);
+
+      // 检查表单验证
+      await waitFor(() => {
+        expect(screen.getByText('请选择模块')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('历史记录测试', () => {
+    it('应该保存执行历史', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, output: 'test' }),
+      } as Response);
+
+      renderWithRouter(<ToolPage />);
+      
+      const executeButton = screen.getByText('执行命令');
+      fireEvent.click(executeButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('执行历史')).toBeInTheDocument();
+      });
+    });
+  });
+});
