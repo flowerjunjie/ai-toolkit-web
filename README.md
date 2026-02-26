@@ -3,6 +3,18 @@
 
 **Web界面让非技术用户也能轻松使用AI Toolkit的2096+命令！** 🚀
 
+---
+
+## 💰 支持项目
+
+如果这个工具对你有帮助，欢迎打赏支持！
+
+**以太坊钱包**: `0x09c18DEa8A2b2cf596D58056F74DACe14Ea7196d`
+
+<img src="https://raw.githubusercontent.com/flowerjunjie/ai-toolkit/main/assets/donate-qr.png" width="200" alt="打赏二维码">
+
+---
+
 ## 🎯 项目简介
 
 AI Toolkit Web是一个现代化的Web界面，为AI Toolkit命令行工具提供图形化操作界面。让非技术用户（商务人士、研究人员、内容创作者等）也能轻松使用强大的AI工具。
@@ -227,6 +239,16 @@ MIT License
 - [FastAPI](https://fastapi.tiangolo.com/) - 现代化Python Web框架
 - [React](https://react.dev/) - 用户界面JavaScript库
 - [Ant Design](https://ant.design/) - 企业级UI设计语言
+
+---
+
+## 💰 支持项目
+
+如果这个工具对你有帮助，欢迎打赏支持！
+
+**以太坊钱包**: `0x09c18DEa8A2b2cf596D58056F74DACe14Ea7196d`
+
+<img src="https://raw.githubusercontent.com/flowerjunjie/ai-toolkit/main/assets/donate-qr.png" width="200" alt="打赏二维码">
 
 ---
 
